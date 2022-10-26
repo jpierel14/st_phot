@@ -134,14 +134,8 @@ class observation():
         cutout_errs = []
         fluxg = []
 
-        if background is None
-            all_bg_est = [0]*self.n_exposures #replace with bkg method
-            if not fit_bkg:
-                print('Warning: No background subtracting happening here.')
-        elif isinstance(background,(int,float)):
-            all_bg_est = [background]*len(self.n_exposures)
-        else:
-            all_bg_est = background
+
+        all_bg_est = [0]*self.n_exposures #replace with bkg method
 
         if not isinstance(psf_model,list):
             self.psf_model_list = []
