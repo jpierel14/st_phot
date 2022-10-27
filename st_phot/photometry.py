@@ -134,12 +134,12 @@ class observation():
         cutout_errs = []
         fluxg = []
 
-        if background is None
+        if background is None:
             all_bg_est = [0]*self.n_exposures #replace with bkg method
             if not fit_bkg:
                 print('Warning: No background subtracting happening here.')
         elif isinstance(background,(int,float)):
-            all_bg_est = [background]*len(self.n_exposures)
+            all_bg_est = [background]*self.n_exposures
         else:
             all_bg_est = background
 
@@ -232,8 +232,8 @@ class observation():
 
         if fit_bkg:
             pnames = np.append(pnames,['bkg'])
-            pbounds['bkg'] = [0,50]
-
+            assert 'bkg' in bounds.keys(),"Must supply bounds for bkg"
+            pbounds['bkg'] = bounds['bkg']
         self.nest_psf(pnames,pbounds,cutouts,cutout_errs,all_xf,all_yf,
                         psf_width=fit_width,npoints=npoints,use_MLE=use_MLE,maxiter=maxiter)
 
@@ -262,13 +262,16 @@ class observation():
 
             xi,yi = centers[i]
 
-            flux_sum = simple_aperture_sum(self.psf_result.psf_arr[i],np.atleast_2d([y-yi+fit_width/2,x-xi+fit_width/2]),10)
+            
+            flux_sum = simple_aperture_sum(self.psf_model_list[i].data*self.psf_model_list[i].flux,np.atleast_2d([y-yi+self.psf_model_list[i].shape[0]/2,
+                                                                                     x-xi+self.psf_model_list[i].shape[1]/2]),10)
 
             if self.telescope == 'JWST':
                 psf_corr,model_psf = calc_jwst_psf_corr(10,self.instrument,self.filter,self.wcs_list[i],psf=model_psf)
-
+                
                 flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(flux_sum*psf_corr,
-                    self.psf_result.errors[flux_var]*psf_corr,self.wcs_list[i])
+                    (self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
+                    flux_sum*psf_corr,self.wcs_list[i])
             else:
                 raise RuntimeError('not yet implemented for hst')
                 # psf_corr = calc_hst_psf_corr(self.instrument,self.filter,self.wcs_list[i])
@@ -288,7 +291,8 @@ class observation():
 
         self.psf_result.phot_cal_table = astropy.table.Table(result_cal)
 
-
+        print('Finished PSF psf_photometry with median residuals of %.2f'%\
+            (100*np.median([self.psf_result.resid_arr[i]/self.psf_result.data_arr[i] for i in range(self.n_exposures)]))+'%')
 
     def nest_psf(self,vparam_names, bounds,fluxes, fluxerrs,xs,ys,psf_width=7,use_MLE=False,
                        minsnr=0., priors=None, ppfs=None, npoints=100, method='single',
@@ -412,7 +416,7 @@ class observation():
                     mflux+=parameters[vparam_names.index('bkg')]
                 mflux*=self.pams[i][posx,posy]
 
-                total+=np.sum(((fluxes[i]-mflux)*weights)**2)
+                total+=np.sum(((fluxes[i]-mflux)/fluxerrs[i])**2)#*weights)**2)
 
             return total
         
@@ -482,9 +486,10 @@ class observation():
             all_mflux_arr.append(mflux*self.pams[i][posx,posy])
 
             if fit_bkg:
-                mflux+=res.best[vparam_names.index('bkg')]
+                #mflux+=res.best[vparam_names.index('bkg')]
+                res.data_arr[i]-=res.best[vparam_names.index('bkg')]
             mflux*=self.pams[i][posx,posy]
-            resid = fluxes[i]-mflux
+            resid = res.data_arr[i]-mflux
             all_resid_arr.append(resid)
             
         res.psf_arr = all_mflux_arr
@@ -498,6 +503,7 @@ class observation():
         except:
             print('Must fit PSF before plotting.')
             return
+
 
         fig,axes = plt.subplots(self.n_exposures,3)
         for i in range(self.n_exposures):

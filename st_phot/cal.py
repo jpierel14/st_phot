@@ -25,7 +25,7 @@ def calibrate_JWST_flux(flux,fluxerr,imwcs,units = astropy.units.MJy):
     fluxerr = fluxerr.to(units)
     mag = flux.to(astropy.units.ABmag)
     zp = mag.value+2.5*np.log10(flux.value)
-    
+    #print(mag,-2.5*np.log10(flux.value))
     return(flux.value,fluxerr.value,mag.value,magerr,zp)
 
 def calibrate_HST_flux(flux,fluxerr,primary_header,sci_header):
@@ -59,8 +59,9 @@ def calc_jwst_psf_corr(ap_rad,instrument,band,imwcs,oversample=4,show_plot=False
     radius, profile, ee = radial_profile(psf, ee=True, ext=0)
     ee_func = scipy.interpolate.interp1d(radius,ee)
     pixel_scale = astropy.wcs.utils.proj_plane_pixel_scales(imwcs)[0]  * imwcs.wcs.cunit[0].to('arcsec')
+    #print(ap_rad*pixel_scale,ee_func(ap_rad*pixel_scale))
     return(1/ee_func(ap_rad*pixel_scale),psf)
 
-    #print(ee_func(np.max(radius))/ee_func(rad_func(.857)))#/pixel_scale)
+    
 
 
