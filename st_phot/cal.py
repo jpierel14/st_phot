@@ -31,8 +31,9 @@ def calibrate_JWST_flux(flux,fluxerr,imwcs,units = astropy.units.MJy):
 def calibrate_HST_flux(flux,fluxerr,primary_header,sci_header):
 
     magerr = 1.086 * fluxerr/flux
-    instrument = primary_header['INSTRUME']
-
+    instrument = primary_header['DETECTOR']
+    #flux/=primary_header['EXPTIME']
+    #fluxerr/=primary_header['EXPTIME']
     if instrument=='IR':
         zp = hst_get_zp(filt,'ab')
     else:
@@ -44,7 +45,7 @@ def calibrate_HST_flux(flux,fluxerr,primary_header,sci_header):
         zp = -2.5*np.log10(photflam)-5*np.log10(photplam)-2.408
 
     mag = -2.5*np.log10(flux)+zp
-    return(flux,fluxerr,mag,magerr,zp)
+    return(float(flux),float(fluxerr),float(mag),float(magerr),float(zp))
 
 
 def calc_jwst_psf_corr(ap_rad,instrument,band,imwcs,oversample=4,show_plot=False,psf=None):
@@ -61,6 +62,34 @@ def calc_jwst_psf_corr(ap_rad,instrument,band,imwcs,oversample=4,show_plot=False
     pixel_scale = astropy.wcs.utils.proj_plane_pixel_scales(imwcs)[0]  * imwcs.wcs.cunit[0].to('arcsec')
     #print(ap_rad*pixel_scale,ee_func(ap_rad*pixel_scale))
     return(1/ee_func(ap_rad*pixel_scale),psf)
+
+    
+def calc_hst_psf_corr(ap_rad,instrument,band,pos,psf=None,sci_ext=1):
+    import sys
+    sys.path.append('/Users/jpierel/CodeBase/wfc3_photometry')
+    from psf_tools.PSFUtils import make_models
+    from psf_tools.PSFPhot import get_standard_psf
+    from .util import simple_aperture_sum
+
+    if psf is None:
+        psf = make_models(get_standard_psf('.',band,instrument))[sci_ext-1]
+
+    elif isinstance(psf,str):
+            
+        psf = make_models(get_standard_psf(psf,band,instrument))[sci_ext-1]
+
+
+    psf_width =500
+    psf.x_0 = 250#pos[0]
+    psf.y_0 = 250#pos[1]
+    x,y=(250,250)
+
+    yg, xg = np.mgrid[-1*(psf_width-1)/2:(psf_width+1)/2,-1*(psf_width-1)/2:(psf_width+1)/2].astype(int)
+    yf, xf = yg+int(y+.5), xg+int(x+.5)
+    psf = np.array(psf(xf,yf)).astype(float)
+    #print('tot',float(simple_aperture_sum(psf,[250,250],100)))
+    return(simple_aperture_sum(psf,[250,250],100)/simple_aperture_sum(psf,[250,250],ap_rad))
+
 
     
 

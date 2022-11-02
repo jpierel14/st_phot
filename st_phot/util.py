@@ -35,6 +35,29 @@ def jwst_apcorr(fname,ee=70):
            aperture_params['bkg_aperture_inner_radius'],
            aperture_params['bkg_aperture_outer_radius']]
 
+
+def estimate_bkg(data,position,inner, outer,model_psf=None,corr=None):
+    assert model_psf is not None or corr is not None, 'Must supply model_psf or corr'
+    assert inner<outer
+
+    annulus_aperture = CircularAnnulus(np.flip(position), r_in=inner, r_out=outer)
+    annulus_mask = annulus_aperture.to_mask(method='center')
+
+    annulus_data = annulus_mask.multiply(data)
+    import matplotlib.pyplot as plt
+    psf_width =100
+    model_psf.x_0 = position[1]
+    model_psf.y_0 = position[0]
+    yf, xf = np.mgrid[0:data.shape[0],0:data.shape[1]].astype(int)
+    psf = np.array(model_psf(xf,yf)).astype(float)
+    annulus_psf = annulus_mask.multiply(psf)
+    print(np.sum(annulus_psf)/np.sum(psf))
+    plt.imshow(annulus_data)
+    plt.show()
+    plt.imshow(annulus_psf)
+    plt.show()
+    sys.exit()
+
 def generic_aperture_phot(data,positions,radius,sky,epadu=1,error=None):
     aperture = CircularAperture(positions, r=radius)
     annulus_aperture = CircularAnnulus(positions, r_in=sky["sky_in"], r_out=sky["sky_out"])
