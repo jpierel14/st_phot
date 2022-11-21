@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import os,sys
 
 from .util import generic_aperture_phot,jwst_apcorr,hst_apcorr,simple_aperture_sum
-from .cal import calibrate_JWST_flux,calibrate_HST_flux,calc_jwst_psf_corr,calc_hst_psf_corr
+from .cal import calibrate_JWST_flux,calibrate_HST_flux,calc_jwst_psf_corr,calc_hst_psf_corr,JWST_mag_to_flux
 
 class observation():
     def __init__(self,exposure_fnames,pixel_area_map,sci_ext=1):
@@ -48,6 +48,33 @@ class observation():
             raise RuntimeError('Do not recognize your PAM.')
 
         self.data_arr_pam = [im*pam for im,pam in zip(self.data_arr,self.pams)]
+
+    def plant_psf(self,psf_model,plant_locations,magnitudes):
+        if isinstance(magnitudes,(int,float)):
+            magnitudes = [magnitudes]*len(plant_locations)
+        psf_corr,mod_psf = calc_jwst_psf_corr(psf_model.data.shape[0]/2,self.instrument,
+            self.filter,self.wcs_list[0])
+        for i in range(self.n_exposures):
+            temp = astropy.io.fits.open(self.exposure_fnames[i])
+            for j in range(len(plant_locations)):
+                flux = JWST_mag_to_flux(magnitudes[j],self.wcs_list[i])
+                
+                psf_model.flux = flux/np.sum(psf_model.data)/psf_corr
+                yf, xf = np.mgrid[0:psf_model.data.shape[0],0:psf_model.shape[1]].astype(int)
+                #sys.exit()
+
+                #yf, xf = yg+int(y),xg+int(x)#
+                #yf, xf = yg+np.round(y).astype(int), xg+np.round(x).astype(int)
+                psf_arr = psf_model(yf,xf)/astropy.nddata.extract_array(\
+                    self.pams[i],psf_model.data.shape,plant_locations[j])
+                
+
+                temp['SCI',1].data = astropy.nddata.add_array(temp['SCI',1].data,
+                    psf_arr,plant_locations[j])
+
+            temp.writeto(os.path.basename(self.exposure_fnames[i]).replace('.fits','_plant.fits'),overwrite=True)
+
+
 
 
     def aperture_photometry(self,sky_location,encircled_energy=70):
@@ -155,6 +182,8 @@ class observation():
             self.psf_model_list = []
             for i in range(self.n_exposures):
                 self.psf_model_list.append(deepcopy(psf_model))
+        else:
+            self.psf_model_list = psf_model
 
         for im in range(self.n_exposures):
             if len(xy_positions)==self.n_exposures:
@@ -243,9 +272,21 @@ class observation():
             pbounds = bounds    
 
         if fit_bkg:
-            pnames = np.append(pnames,['bkg'])
             assert 'bkg' in bounds.keys(),"Must supply bounds for bkg"
-            pbounds['bkg'] = bounds['bkg']
+
+            if fit_flux=='multi':
+                to_add = []
+                for i in range(len(pnames)):
+                    if 'flux' in pnames[i]:
+                        to_add.append('bkg%s'%pnames[i][-1])
+                        pbounds['bkg%s'%pnames[i][-1]] = bounds['bkg']
+                pnames = np.append(pnames,to_add)
+                
+            else:
+                pnames = np.append(pnames,['bkg'])
+                pbounds['bkg'] = bounds['bkg']
+
+            
         print(pbounds)
         #sys.exit()
         self.nest_psf(pnames,pbounds,cutouts,cutout_errs,all_xf,all_yf,
@@ -297,6 +338,12 @@ class observation():
                 raerr = np.abs(sc2.ra.value-ra)
                 decerr = np.abs(sc2.dec.value-dec)
 
+            if 'bkg' in self.psf_result.vparam_names:
+                bk_std = self.psf_result.errors['bkg']
+            elif 'bkg%i'%i in self.psf_result.vparam_names:
+                bk_std = self.psf_result.errors['bkg%i'%i]
+            else:
+                bk_std = 0
             psf_pam = astropy.nddata.utils.extract_array(self.pams[i],self.psf_model_list[i].data.shape,[x,y],mode='strict')
             psf_pams.append(psf_pam)
             
@@ -318,15 +365,15 @@ class observation():
                 psf_corr,model_psf = calc_jwst_psf_corr(10,self.instrument,self.filter,self.wcs_list[i],psf=model_psf)
                 
                 flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(flux_sum*psf_corr,
-                    (self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
-                    flux_sum*psf_corr,self.wcs_list[i])
+                    np.sqrt(((self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
+                    flux_sum*psf_corr)**2+bk_std**2),self.wcs_list[i])
             else:
-                psf_corr = calc_hst_psf_corr(10,self.detector,self.filter,[x,y],'/Users/jpierel/CodeBase/manuscript_jupyter/sn2022qmx/hst_psfs')
+                psf_corr = calc_hst_psf_corr(10,self.detector,self.filter,[x,y],'/Users/jpierel/DataBase/HST/psfs')
                 #print(psf_corr,flux_sum,x,y)
                 #sys.exit()
                 flux,fluxerr,mag,magerr,zp = calibrate_HST_flux(flux_sum*psf_corr,
-                    (self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
-                    flux_sum*psf_corr,self.prim_headers[i],self.sci_headers[i])
+                    np.sqrt(((self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
+                    flux_sum*psf_corr)**2+bk_std**2),self.prim_headers[i],self.sci_headers[i])
 
             result_cal['x'].append(x)
             result_cal['y'].append(y)
@@ -335,8 +382,8 @@ class observation():
             except:
                 result_cal['mjd'].append(self.prim_headers[i]['EXPSTART'])
                 
-            result_cal['flux_cal'].append(flux)
-            result_cal['flux_cal_err'].append(fluxerr)
+            result_cal['flux'].append(flux)
+            result_cal['fluxerr'].append(fluxerr)
             result_cal['filter'].append(self.filter)
             result_cal['zp'].append(zp)
             result_cal['mag'].append(mag)
@@ -480,7 +527,7 @@ class observation():
         else:
             fit_pixel = False
 
-        if 'bkg' in vparam_names:
+        if np.any(['bkg' in x for x in vparam_names]):
             fit_bkg = True
         else:
             fit_bkg = False
@@ -519,14 +566,17 @@ class observation():
                 #print(mflux)
                 weights = mflux/np.max(mflux)
                 if fit_bkg:
-                    mflux+=parameters[vparam_names.index('bkg')]
+                    if multi_flux:
+                        mflux+=parameters[vparam_names.index('bkg%i'%i)]
+                    else:
+                        mflux+=parameters[vparam_names.index('bkg')]
                 mflux*=self.pams[i][posx,posy]
                 # plt.imshow(fluxes[i])
                 # plt.show()
                 # plt.imshow(mflux)
                 # plt.show()
                 # print(np.sum(fluxes[i]),np.sum(mflux))
-                # sys.exit()
+                #sys.exit()
                 total+=np.sum(((fluxes[i]-mflux)/fluxerrs[i])**2)#*weights)**2)
 
             return total
@@ -598,8 +648,10 @@ class observation():
             all_mflux_arr.append(mflux*self.pams[i][posx,posy])
 
             if fit_bkg:
-                #mflux+=res.best[vparam_names.index('bkg')]
-                res.data_arr[i]-=res.best[vparam_names.index('bkg')]
+                if multi_flux:
+                    res.data_arr[i]-=res.best[vparam_names.index('bkg%i'%i)]
+                else:
+                    res.data_arr[i]-=res.best[vparam_names.index('bkg')]
             mflux*=self.pams[i][posx,posy]
             resid = res.data_arr[i]-mflux
             all_resid_arr.append(resid)

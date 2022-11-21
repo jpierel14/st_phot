@@ -28,6 +28,20 @@ def calibrate_JWST_flux(flux,fluxerr,imwcs,units = astropy.units.MJy):
     #print(mag,-2.5*np.log10(flux.value))
     return(flux.value,fluxerr.value,mag.value,magerr,zp)
 
+def JWST_mag_to_flux(mag,imwcs,zpsys='ab'):
+    if zpsys=='ab':
+        flux = (mag*astropy.units.ABmag).to(astropy.units.MJy)
+    elif zpsys=='vega':
+        flux = (mag*astropy.units.Vegamag).to(astropy.units.MJy)
+    else:
+        raise RuntimeError('Do not recognize zpsys')
+    pixel_scale = astropy.wcs.utils.proj_plane_pixel_scales(imwcs)[0]  * imwcs.wcs.cunit[0].to('arcsec')
+
+    flux /=  ((pixel_scale * astropy.units.arcsec)**2).to(astropy.units.sr)
+    
+    return flux.value
+
+
 def calibrate_HST_flux(flux,fluxerr,primary_header,sci_header):
 
     magerr = 1.086 * fluxerr/flux
@@ -35,7 +49,7 @@ def calibrate_HST_flux(flux,fluxerr,primary_header,sci_header):
     #flux/=primary_header['EXPTIME']
     #fluxerr/=primary_header['EXPTIME']
     if instrument=='IR':
-        zp = hst_get_zp(filt,'ab')
+        zp = hst_get_zp(primary_header['FILTER'],'ab')
     else:
         try:
             photflam = sci_header['PHOTFLAM']
@@ -72,7 +86,7 @@ def calc_hst_psf_corr(ap_rad,instrument,band,pos,psf=None,sci_ext=1):
     from .util import simple_aperture_sum
 
     if psf is None:
-        psf = make_models(get_standard_psf('.',band,instrument))[sci_ext-1]
+        psf = make_models(get_standard_psf('/Users/jpierel/DataBase/HST/psfs',band,instrument))[sci_ext-1]
 
     elif isinstance(psf,str):
             

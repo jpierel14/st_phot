@@ -45,7 +45,6 @@ def estimate_bkg(data,position,inner, outer,model_psf=None,corr=None):
 
     annulus_data = annulus_mask.multiply(data)
     import matplotlib.pyplot as plt
-    psf_width =100
     model_psf.x_0 = position[1]
     model_psf.y_0 = position[0]
     yf, xf = np.mgrid[0:data.shape[0],0:data.shape[1]].astype(int)
