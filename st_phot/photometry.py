@@ -77,12 +77,21 @@ class observation():
 
 
 
-    def aperture_photometry(self,sky_location,encircled_energy=70):
+    def aperture_photometry(self,sky_location,xy_positions=None,
+                radius=None,encircled_energy=None,skyan_in=None,skyan_out=None):
+        assert radius is not None or encircled_energy is not None, 'Must supply radius or ee'
+        assert (self.telescope.lower()=='hst' and radius is not None) or \
+        (self.telescope.lower()=='jwst' and encircled_energy is not None),\
+        'Must supply radius for hst or ee for jwst'
+
         result = {'pos_x':[],'pos_y':[],'aper_bkg':[],'aperture_sum':[],'aperture_sum_err':[],
                   'aper_sum_corrected':[],'aper_sum_bkgsub':[],'annulus_median':[],'exp':[]}
         result_cal = {'flux_cal':[],'flux_cal_err':[],'filter':[],'zp':[],'mag':[],'magerr':[],'zpsys':[],'exp':[]}
         for i in range(self.n_exposures):
-            positions = np.atleast_2d(astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs_list[i]))
+            if xy_positions is None:
+                positions = np.atleast_2d(astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs_list[i]))
+            else:
+                positions = np.atleast_2d(xy_positions)
             if self.telescope=='JWST':
                 radius,apcorr,skyan_in,skyan_out = jwst_apcorr(self.exposure_fnames[i],encircled_energy)
                 epadu = self.sci_headers[i]['XPOSURE']*self.sci_headers[i]['PHOTMJSR']
@@ -90,8 +99,14 @@ class observation():
                 if self.sci_headers[i]['BUNIT']=='ELECTRON':
                     epadu = 1
                 else:
-                    epadu = self.prim_headers[i].header['EXPTIME']
-                radius,apcorr,skyan_in,skyan_out = hst_apcorr(self.filter,self.instrument,encircled_energy)
+                    epadu = self.prim_headers[i]['EXPTIME']
+                px_scale = astropy.wcs.utils.proj_plane_pixel_scales(self.wcs_list[0])[0] *\
+                                                                             self.wcs_list[0].wcs.cunit[0].to('arcsec')
+                apcorr = hst_apcorr(radius*px_scale,self.filter,self.instrument)
+                if skyan_in is None:
+                    skyan_in = radius*3
+                if skyan_out is None:
+                    skyan_out = radius*4
 
             sky = {'sky_in':skyan_in,'sky_out':skyan_out}
             phot = generic_aperture_phot(self.data_arr_pam[i],positions,radius,sky,error=self.err_arr[i],
@@ -101,8 +116,12 @@ class observation():
                     result[k].append(float(phot[k]))
             result['pos_x'].append(positions[0][0])
             result['pos_y'].append(positions[0][1])
-            result['aper_sum_corrected'].append(float(phot['aper_sum_bkgsub'] * apcorr))
-            result['aperture_sum_err'][-1]*= apcorr
+            if self.telescope.lower()=='jwst':
+                result['aper_sum_corrected'].append(float(phot['aper_sum_bkgsub'] * apcorr))
+                result['aperture_sum_err'][-1]*= apcorr
+            else:
+                result['aper_sum_corrected'].append(float(phot['aper_sum_bkgsub'] / apcorr))
+                result['aperture_sum_err'][-1]/= apcorr
             result['exp'].append(os.path.basename(self.exposure_fnames[i]))
 
             if self.telescope=='JWST':
