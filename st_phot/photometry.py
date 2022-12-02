@@ -10,6 +10,111 @@ import os,sys
 from .util import generic_aperture_phot,jwst_apcorr,hst_apcorr,simple_aperture_sum
 from .cal import calibrate_JWST_flux,calibrate_HST_flux,calc_jwst_psf_corr,calc_hst_psf_corr,JWST_mag_to_flux
 
+class observation3():
+    def __init__(self,fname):
+        self.fname = fname
+        self.fits = astropy.io.fits.open(self.fname)
+        self.data = self.fits['SCI',1].data
+        try:
+            self.err = np.zeros(self.data.shape)
+            #self.err = self.fits['ERR',1]
+        except:
+            self.err = 1./np.sqrt(self.fits['WHT',1])
+        self.prim_header = self.fits[0].header
+        self.sci_header = self.fits['SCI',1].header
+        self.wcs = astropy.wcs.WCS(self.sci_header)
+        try:
+            self.telescope = self.prim_header['TELESCOP']
+            self.instrument = self.prim_header['INSTRUME']
+            try:
+                self.filter = self.prim_header['FILTER']
+            except:
+                if 'CLEAR' in self.prim_header['FILTER1']:
+                    self.filter = self.prim_header['FILTER2']
+                else:
+                    self.filter = self.prim_header['FILTER1']
+        except:
+            self.telescope = 'JWST'
+            self.instrument = 'NIRCam'
+
+
+    def aperture_photometry(self,sky_location,xy_positions=None,
+                radius=None,encircled_energy=None,skyan_in=None,skyan_out=None):
+        assert radius is not None or encircled_energy is not None, 'Must supply radius or ee'
+        assert (self.telescope.lower()=='hst' and radius is not None) or \
+        (self.telescope.lower()=='jwst' and encircled_energy is not None),\
+        'Must supply radius for hst or ee for jwst'
+
+        result = {'pos_x':[],'pos_y':[],'aper_bkg':[],'aperture_sum':[],'aperture_sum_err':[],
+                  'aper_sum_corrected':[],'aper_sum_bkgsub':[],'annulus_median':[],'exp':[]}
+        result_cal = {'flux':[],'flux_err':[],'filter':[],'zp':[],'mag':[],'magerr':[],'zpsys':[],'exp':[],'mjd':[]}
+        
+        if xy_positions is None:
+            positions = np.atleast_2d(astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs))
+        else:
+            positions = np.atleast_2d(xy_positions)
+        if self.telescope=='JWST':
+            #radius,apcorr,skyan_in,skyan_out = jwst_apcorr(self.fname,encircled_energy)
+            radius,apcorr,skyan_in,skyan_out = 5,1,6,8
+            epadu = self.sci_header['XPOSURE']*self.sci_header['PHOTMJSR']
+        else:
+            if self.sci_header['BUNIT']=='ELECTRON':
+                epadu = 1
+            else:
+                epadu = self.prim_header['EXPTIME']
+            px_scale = astropy.wcs.utils.proj_plane_pixel_scales(self.wcs)[0] *\
+                                                                         self.wcs.wcs.cunit[0].to('arcsec')
+            apcorr = hst_apcorr(radius*px_scale,self.filter,self.instrument)
+            if skyan_in is None:
+                skyan_in = radius*3
+            if skyan_out is None:
+                skyan_out = radius*4
+
+        sky = {'sky_in':skyan_in,'sky_out':skyan_out}
+        phot = generic_aperture_phot(self.data,positions,radius,sky,#error=self.err,
+                                            epadu=epadu)
+        for k in phot.keys():
+            if k in result.keys():
+                result[k].append(float(phot[k]))
+        result['pos_x'].append(positions[0][0])
+        result['pos_y'].append(positions[0][1])
+        if self.telescope.lower()=='jwst':
+            result['aper_sum_corrected'].append(float(phot['aper_sum_bkgsub'] * apcorr))
+            result['aperture_sum_err'][-1]*= apcorr
+        else:
+            result['aper_sum_corrected'].append(float(phot['aper_sum_bkgsub'] / apcorr))
+            result['aperture_sum_err'][-1]/= apcorr
+        result['exp'].append(os.path.basename(self.fname))
+
+        if self.telescope=='JWST':
+            flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(result['aper_sum_corrected'][-1],
+                                                          result['aperture_sum_err'][-1],
+                                                          self.wcs)
+            mjd = self.prim_header['MJD-AVG']
+        else:
+            flux,fluxerr,mag,magerr,zp = calibrate_HST_flux(result['aper_sum_corrected'][-1],
+                                                          result['aperture_sum_err'][-1],
+                                                          self.prim_header,
+                                                          self.sci_header)
+            mjd = np.median([self.prim_header['EXPSTART'],self.prim_header['EXPEND']])
+        result_cal['flux'].append(flux)
+        result_cal['flux_err'].append(fluxerr)
+        result_cal['mag'].append(mag)
+        result_cal['magerr'].append(magerr)
+        result_cal['filter'].append(self.filter)
+        result_cal['zp'].append(zp)
+        result_cal['zpsys'].append('ab')
+        result_cal['exp'].append(os.path.basename(self.fname))
+        result_cal['mjd'].append(mjd)
+        res = sncosmo.utils.Result(radius=radius,
+                   apcorr=apcorr,
+                   sky_an=sky,
+                   phot_table=astropy.table.Table(result),
+                   phot_cal_table=astropy.table.Table(result_cal)
+                   )
+        self.aperture_result = res
+
+
 class observation():
     def __init__(self,exposure_fnames,pixel_area_map,sci_ext=1):
         self.exposure_fnames = exposure_fnames if not isinstance(exposure_fnames,str) else [exposure_fnames]
@@ -27,12 +132,17 @@ class observation():
         except:
             self.detector = None
 
-        if self.detector=='UVIS':
+        if self.sci_headers[0]['BUNIT'] in ['ELECTRON','ELECTRONS']:
             self.data_arr = [self.data_arr[i]/self.prim_headers[i]['EXPTIME'] for i in range(self.n_exposures)]
             self.err_arr = [self.err_arr[i]/self.prim_headers[i]['EXPTIME'] for i in range(self.n_exposures)]
 
         if 'FILTER' in self.prim_headers[0].keys():
             self.filter = np.unique([hdr['FILTER'] for hdr in self.prim_headers])
+        elif 'FILTER1' in self.prim_headers[0].keys():
+            if 'CLEAR' in self.prim_headers[0]['FILTER1']:
+                self.filter = np.unique([hdr['FILTER2'] for hdr in self.prim_headers])
+            else:
+                self.filter = np.unique([hdr['FILTER1'] for hdr in self.prim_headers])
         else:
             self.filter = np.unique([hdr['FILTER'] for hdr in self.sci_headers])
         if len(self.filter)>1:
@@ -75,6 +185,7 @@ class observation():
             temp.writeto(os.path.basename(self.exposure_fnames[i]).replace('.fits','_plant.fits'),overwrite=True)
 
 
+    
 
 
     def aperture_photometry(self,sky_location,xy_positions=None,
