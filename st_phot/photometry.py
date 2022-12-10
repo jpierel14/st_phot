@@ -328,12 +328,11 @@ class observation():
             #yf, xf = yg+int(yi), xg+int(xi)
             all_xf.append(xf)
             all_yf.append(yf)
-            print(xi,yi)
             cutout = self.data_arr_pam[im][xf, yf]
             plt.imshow(cutout)
             plt.show()
             err = self.err_arr[im][xf, yf]
-
+            err[err<=0] = np.max(err)
             cutouts.append(cutout-all_bg_est[im])
             cutout_errs.append(err)
             
@@ -417,7 +416,7 @@ class observation():
                 pbounds['bkg'] = bounds['bkg']
 
             
-        print(pbounds)
+        #print(pbounds)
         #sys.exit()
         self.nest_psf(pnames,pbounds,cutouts,cutout_errs,all_xf,all_yf,
                         psf_width=fit_width,npoints=npoints,use_MLE=use_MLE,maxiter=maxiter)
@@ -708,7 +707,7 @@ class observation():
                 # print(np.sum(fluxes[i]),np.sum(mflux))
                 #sys.exit()
                 total+=np.sum(((fluxes[i]-mflux)/fluxerrs[i])**2)#*weights)**2)
-
+                
             return total
         
         
