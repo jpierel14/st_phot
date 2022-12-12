@@ -44,7 +44,7 @@ setup(
     setup_requires=['numpy'],
     install_requires=['numpy', 'astropy','jwst','sncosmo','webbpsf','corner','nestle'],
     packages=[PACKAGENAME],
-    package_data={'sntd': data_files},
+    package_data={PACKAGENAME: data_files},
 
     version=VERSION,
     author=AUTHOR,
