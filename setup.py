@@ -42,7 +42,7 @@ data_files = [f[len(PACKAGENAME)+1:] for f in data_files]
 setup(
     name=PACKAGENAME,
     setup_requires=['numpy'],
-    install_requires=['numpy', 'astropy','jwst','sncosmo','webbpsf','corner'],
+    install_requires=['numpy', 'astropy','jwst','sncosmo','webbpsf','corner','nestle'],
     packages=[PACKAGENAME],
     package_data={'sntd': data_files},
 
