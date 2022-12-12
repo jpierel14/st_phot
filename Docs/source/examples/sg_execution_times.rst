@@ -5,10 +5,12 @@
 
 Computation times
 =================
-**01:12.024** total execution time for **examples** files:
+**00:33.647** total execution time for **examples** files:
 
 +----------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_examples_plot_a_psf.py` (``plot_a_psf.py``)           | 01:12.024 | 0.0 MB |
+| :ref:`sphx_glr_examples_plot_c_plant.py` (``plot_c_plant.py``)       | 00:33.647 | 0.0 MB |
++----------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_examples_plot_a_psf.py` (``plot_a_psf.py``)           | 00:00.000 | 0.0 MB |
 +----------------------------------------------------------------------+-----------+--------+
 | :ref:`sphx_glr_examples_plot_b_aperture.py` (``plot_b_aperture.py``) | 00:00.000 | 0.0 MB |
 +----------------------------------------------------------------------+-----------+--------+

@@ -12,6 +12,23 @@ Examples
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Planting PSFs">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_c_plant_thumb.png
+    :alt: Planting PSFs
+
+  :ref:`sphx_glr_examples_plot_c_plant.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Planting PSFs</div>
+    </div>
+
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="Aperture Photometry">
 
 .. only:: html
@@ -52,6 +69,7 @@ Examples
 .. toctree::
    :hidden:
 
+   /examples/plot_c_plant
    /examples/plot_b_aperture
    /examples/plot_a_psf
 

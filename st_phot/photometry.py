@@ -207,6 +207,8 @@ class observation():
             The magnitudes to plant your psf (matching length of plant_locations)
         """
 
+        if not isinstance(plant_locations,(list,np.ndarray)):
+            plant_locations = [plant_locations]
         if isinstance(magnitudes,(int,float)):
             magnitudes = [magnitudes]*len(plant_locations)
         psf_corr,mod_psf = calc_jwst_psf_corr(psf_model.data.shape[0]/2,self.instrument,
@@ -214,18 +216,20 @@ class observation():
         for i in range(self.n_exposures):
             temp = astropy.io.fits.open(self.exposure_fnames[i])
             for j in range(len(plant_locations)):
+                if isinstance(plant_locations[i],astropy.coordinates.SkyCoord):
+                    y,x = astropy.wcs.utils.skycoord_to_pixel(plant_locations[i],self.wcs_list[i])
+                else:
+                    x,y = plant_locations[i]
                 flux = JWST_mag_to_flux(magnitudes[j],self.wcs_list[i])
                 
-                psf_model.flux = flux/np.sum(psf_model.data)/psf_corr
-                yf, xf = np.mgrid[0:psf_model.data.shape[0],0:psf_model.shape[1]].astype(int)
+                flux = flux/np.sum(psf_model.data)/psf_corr
 
-                psf_arr = psf_model(yf,xf)/astropy.nddata.extract_array(\
-                    self.pams[i],psf_model.data.shape,plant_locations[j])
+                psf_arr = flux*psf_model.data/astropy.nddata.extract_array(\
+                    self.pams[i],psf_model.data.shape,[x,y])
                 
-
                 temp['SCI',1].data = astropy.nddata.add_array(temp['SCI',1].data,
-                    psf_arr,plant_locations[j])
-            temp.writeto(os.path.basename(self.exposure_fnames[i]).replace('.fits','_plant.fits'),overwrite=True)
+                    psf_arr,[x,y])
+            temp.writeto(self.exposure_fnames[i].replace('.fits','_plant.fits'),overwrite=True)
 
 
     
