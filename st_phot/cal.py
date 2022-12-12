@@ -4,6 +4,11 @@ import os,scipy
 import webbpsf
 import matplotlib.pyplot as plt
 from poppy.utils import radial_profile
+import sys
+from .wfc3_photometry.psf_tools.PSFUtils import make_models
+from .wfc3_photometry.psf_tools.PSFPhot import get_standard_psf
+from .util import simple_aperture_sum
+
 
 def hst_get_zp(filt,zpsys='ab'):
     if zpsys.lower()=='ab':
@@ -79,11 +84,6 @@ def calc_jwst_psf_corr(ap_rad,instrument,band,imwcs,oversample=4,show_plot=False
 
     
 def calc_hst_psf_corr(ap_rad,instrument,band,pos,psf=None,sci_ext=1):
-    import sys
-    sys.path.append('/Users/jpierel/CodeBase/wfc3_photometry')
-    from psf_tools.PSFUtils import make_models
-    from psf_tools.PSFPhot import get_standard_psf
-    from .util import simple_aperture_sum
 
     if psf is None:
         psf = make_models(get_standard_psf('/Users/jpierel/DataBase/HST/psfs',band,instrument))[sci_ext-1]

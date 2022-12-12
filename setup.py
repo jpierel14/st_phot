@@ -32,15 +32,20 @@ def recursive_glob(basedir, pattern):
 PACKAGENAME = 'st_phot'
 # Add the project-global data
 #data_files = []
+pkgdatadir = os.path.join(PACKAGENAME, 'wfc3_photometry')
+data_files = []
+data_files.extend(recursive_glob(pkgdatadir, '*'))
+data_files = [f[len(PACKAGENAME)+1:] for f in data_files]
 
-#data_files = [f[len(PACKAGENAME)+1:] for f in data_files]
 
 
 setup(
     name=PACKAGENAME,
     setup_requires=['numpy'],
-    install_requires=['numpy', 'astropy','jwst','sncosmo','webbpsf'],
+    install_requires=['numpy', 'astropy','jwst','sncosmo','webbpsf','corner'],
     packages=[PACKAGENAME],
+    package_data={'sntd': data_files},
+
     version=VERSION,
     author=AUTHOR,
     author_email=AUTHOR_EMAIL,

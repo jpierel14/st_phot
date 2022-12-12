@@ -12,7 +12,48 @@ Examples
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Aperture Photometry">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_b_aperture_thumb.png
+    :alt: Aperture Photometry
+
+  :ref:`sphx_glr_examples_plot_b_aperture.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Aperture Photometry</div>
     </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="PSF Photometry">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_a_psf_thumb.png
+    :alt: PSF Photometry
+
+  :ref:`sphx_glr_examples_plot_a_psf.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">PSF Photometry</div>
+    </div>
+
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /examples/plot_b_aperture
+   /examples/plot_a_psf
 
 
 .. only:: html

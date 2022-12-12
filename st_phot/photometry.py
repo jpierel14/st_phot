@@ -2,15 +2,21 @@ import numpy as np
 import astropy
 import sncosmo
 import nestle
+import corner
 from collections import OrderedDict
 from copy import copy,deepcopy
 import matplotlib.pyplot as plt
 import os,sys
+from stsci.skypac import pamutils
 
 from .util import generic_aperture_phot,jwst_apcorr,hst_apcorr,simple_aperture_sum
 from .cal import calibrate_JWST_flux,calibrate_HST_flux,calc_jwst_psf_corr,calc_hst_psf_corr,JWST_mag_to_flux
 
+__all__ = ['observation3','observation']
 class observation3():
+    """
+    st_phot class for level 3 (drizzled) data
+    """
     def __init__(self,fname):
         self.fname = fname
         self.fits = astropy.io.fits.open(self.fname)
@@ -40,6 +46,28 @@ class observation3():
 
     def aperture_photometry(self,sky_location,xy_positions=None,
                 radius=None,encircled_energy=None,skyan_in=None,skyan_out=None):
+        """
+        We do not provide a PSF photometry method for level 3 data, but aperture photometry is possible.
+
+        Parameters
+        ----------
+        sky_location : :class:`~astropy.coordinates.SkyCoord`
+            The location of your source
+        xy_positions : list
+            The xy position of your source (will be used in place of sky_location)
+        radius : float
+            Needed for HST observations to define the aperture radius
+        encircled_energy: int
+            Multiple of 10 to define the JWST aperture information
+        skyan_in : float
+            For HST, defines the inner radius of the background sky annulus
+        skyan_out : float
+            For HST, defines the outer radius of the background sky annulus
+
+        Returns
+        -------
+        aperture_result
+        """
         assert radius is not None or encircled_energy is not None, 'Must supply radius or ee'
         assert (self.telescope.lower()=='hst' and radius is not None) or \
         (self.telescope.lower()=='jwst' and encircled_energy is not None),\
@@ -113,10 +141,14 @@ class observation3():
                    phot_cal_table=astropy.table.Table(result_cal)
                    )
         self.aperture_result = res
+        return self.aperture_result
 
 
 class observation():
-    def __init__(self,exposure_fnames,pixel_area_map,sci_ext=1):
+    """
+    st_phot class for level 2 (individual exposures, cals, flts) data
+    """
+    def __init__(self,exposure_fnames,sci_ext=1):
         self.exposure_fnames = exposure_fnames if not isinstance(exposure_fnames,str) else [exposure_fnames]
         self.exposures = [astropy.io.fits.open(f) for f in self.exposure_fnames]
         self.data_arr = [im['SCI',sci_ext].data for im in self.exposures]
@@ -148,18 +180,33 @@ class observation():
         if len(self.filter)>1:
             raise RuntimeError("Each observation should only have one filter.")
         self.filter = self.filter[0]
-        if isinstance(pixel_area_map,str):
-            self.pams = [im[pixel_area_map].data for im in self.exposures]
-        elif isinstance(pixel_area_map,list):
-            self.pams = pixel_area_map
-        elif isinstance(pixel_area_map,np.ndarray):
-            self.pams = [pixel_area_map]*len(self.exposures)
+        if self.telescope.lower()=='jwst':
+            self.pams = [im['AREA'].data for im in self.exposures]
         else:
-            raise RuntimeError('Do not recognize your PAM.')
-
+            self.pams = []
+            for fname in self.exposure_fnames:
+                 pamutils.pam_from_file(fname, ('sci', sci_ext), 'temp_pam.fits')
+                 self.pams.append(astropy.io.fits.open('temp_pam.fits')[0].data)
+            os.remove('temp_pam.fits')
+        
         self.data_arr_pam = [im*pam for im,pam in zip(self.data_arr,self.pams)]
 
     def plant_psf(self,psf_model,plant_locations,magnitudes):
+        """
+        PSF planting class. Output files will be the same directory
+        as the data files, but with _plant.fits added the end. 
+
+        Parameters
+        ----------
+        psf_model : :class:`~photutils.psf.EPSFModel`
+            In reality this does not need to be an EPSFModel, but just any
+            photutils psf model class.
+        plant_locations : list
+            The location(s) to plant the psf
+        magnitudes:
+            The magnitudes to plant your psf (matching length of plant_locations)
+        """
+
         if isinstance(magnitudes,(int,float)):
             magnitudes = [magnitudes]*len(plant_locations)
         psf_corr,mod_psf = calc_jwst_psf_corr(psf_model.data.shape[0]/2,self.instrument,
@@ -171,17 +218,13 @@ class observation():
                 
                 psf_model.flux = flux/np.sum(psf_model.data)/psf_corr
                 yf, xf = np.mgrid[0:psf_model.data.shape[0],0:psf_model.shape[1]].astype(int)
-                #sys.exit()
 
-                #yf, xf = yg+int(y),xg+int(x)#
-                #yf, xf = yg+np.round(y).astype(int), xg+np.round(x).astype(int)
                 psf_arr = psf_model(yf,xf)/astropy.nddata.extract_array(\
                     self.pams[i],psf_model.data.shape,plant_locations[j])
                 
 
                 temp['SCI',1].data = astropy.nddata.add_array(temp['SCI',1].data,
                     psf_arr,plant_locations[j])
-
             temp.writeto(os.path.basename(self.exposure_fnames[i]).replace('.fits','_plant.fits'),overwrite=True)
 
 
@@ -190,6 +233,28 @@ class observation():
 
     def aperture_photometry(self,sky_location,xy_positions=None,
                 radius=None,encircled_energy=None,skyan_in=None,skyan_out=None):
+        """
+        Aperture photometry class for level 2 data
+
+        Parameters
+        ----------
+        sky_location : :class:`~astropy.coordinates.SkyCoord`
+            The location of your source
+        xy_positions : list
+            The xy position of your source (will be used in place of sky_location)
+        radius : float
+            Needed for HST observations to define the aperture radius
+        encircled_energy: int
+            Multiple of 10 to define the JWST aperture information
+        skyan_in : float
+            For HST, defines the inner radius of the background sky annulus
+        skyan_out : float
+            For HST, defines the outer radius of the background sky annulus
+
+        Returns
+        -------
+        aperture_result
+        """
         assert radius is not None or encircled_energy is not None, 'Must supply radius or ee'
         assert (self.telescope.lower()=='hst' and radius is not None) or \
         (self.telescope.lower()=='jwst' and encircled_energy is not None),\
@@ -264,7 +329,46 @@ class observation():
     def psf_photometry(self,psf_model,sky_location=None,xy_positions=[],fit_width=None,background=None,
                         fit_flux='single',fit_centroid='pixel',fit_bkg=False,bounds={},npoints=100,use_MLE=False,
                         maxiter=None):
+        """
+        st_phot psf photometry class for level 2 data.
 
+        Parameters
+        ----------
+        psf_model : :class:`~photutils.psf.EPSFModel`
+            In reality this does not need to be an EPSFModel, but just any
+            photutils psf model class.
+        sky_location : :class:`~astropy.coordinates.SkyCoord`
+            Location of your source
+        xy_positions : list
+            xy position of your source in each exposure. Must supply this or
+            sky_location but this takes precedent.
+        fit_width : int
+            PSF width to fit (recommend odd number)
+        background : float or list
+            float, list of float, array, or list of array defining the background
+            of your data. If you define an array, it should be of the same shape
+            as fit_width
+        fit_flux : str
+            One of 'single','multi','fixed'. Single is a single flux across all
+            exposures, multi fits a flux for every exposure, and fixed only
+            fits the position
+        fit_centroid : str
+            One of 'pixel','wcs','fixed'. Pixel fits a pixel location of the
+            source in each exposure, wcs fits a single RA/DEC across all exposures,
+            and fixed only fits the flux and not position.
+        fit_bkg : bool
+            Fit for a constant background simultaneously with the PSF fit.
+        bounds : dict
+            Bounds on each parameter. 
+        npoints : int
+            Number of points in the nested sampling (higher is better posterior sampling, 
+            but slower)
+        use_MLE : bool
+            Use the maximum likelihood to define best fit parameters, otherwise use a weighted
+            average of the posterior samples
+        maxiter : None or int
+            If None continue sampling until convergence, otherwise defines the max number of iterations
+        """
         assert sky_location is not None or len(xy_positions)==self.n_exposures,\
         "Must supply sky_location or xy_positions for every exposure"
 
@@ -325,12 +429,11 @@ class observation():
             yg, xg = np.mgrid[-1*(fit_width-1)/2:(fit_width+1)/2,
                               -1*(fit_width-1)/2:(fit_width+1)/2].astype(int)
             yf, xf = yg+np.round(yi).astype(int), xg+np.round(xi).astype(int)
-            #yf, xf = yg+int(yi), xg+int(xi)
+            
             all_xf.append(xf)
             all_yf.append(yf)
             cutout = self.data_arr_pam[im][xf, yf]
-            plt.imshow(cutout)
-            plt.show()
+            
             err = self.err_arr[im][xf, yf]
             err[err<=0] = np.max(err)
             cutouts.append(cutout-all_bg_est[im])
@@ -415,9 +518,7 @@ class observation():
                 pnames = np.append(pnames,['bkg'])
                 pbounds['bkg'] = bounds['bkg']
 
-            
-        #print(pbounds)
-        #sys.exit()
+
         self.nest_psf(pnames,pbounds,cutouts,cutout_errs,all_xf,all_yf,
                         psf_width=fit_width,npoints=npoints,use_MLE=use_MLE,maxiter=maxiter)
 
@@ -478,17 +579,9 @@ class observation():
             
             yf, xf = np.mgrid[0:self.data_arr[i].shape[0],0:self.data_arr[i].shape[1]].astype(int)
 
-            #yf, xf = yg+int(y),xg+int(x)#
-            #yf, xf = yg+np.round(y).astype(int), xg+np.round(x).astype(int)
-            
             psf_arr = self.psf_model_list[i](yf,xf)*self.pams[i]#self.psf_pams[i]
-            #flux_sum = simple_aperture_sum(self.psf_model_list[i].data*self.psf_model_list[i].flux*psf_pam,np.atleast_2d([self.psf_model_list[i].shape[0]/2,
-            #                                                                         self.psf_model_list[i].shape[1]/2]),10)
-            #plt.imshow(astropy.nddata.utils.extract_array(psf_arr,(10,10),[x,y]))
-            #plt.show()
             flux_sum = simple_aperture_sum(psf_arr,np.atleast_2d([y,x]),10)
-            #print(flux_sum,flux_sum2)
-            #sys.exit()
+
 
             if self.telescope == 'JWST':
                 psf_corr,model_psf = calc_jwst_psf_corr(10,self.instrument,self.filter,self.wcs_list[i],psf=model_psf)
@@ -498,8 +591,7 @@ class observation():
                     flux_sum*psf_corr)**2+bk_std**2),self.wcs_list[i])
             else:
                 psf_corr = calc_hst_psf_corr(10,self.detector,self.filter,[x,y],'/Users/jpierel/DataBase/HST/psfs')
-                #print(psf_corr,flux_sum,x,y)
-                #sys.exit()
+
                 flux,fluxerr,mag,magerr,zp = calibrate_HST_flux(flux_sum*psf_corr,
                     np.sqrt(((self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
                     flux_sum*psf_corr)**2+bk_std**2),self.prim_headers[i],self.sci_headers[i])
@@ -533,6 +625,17 @@ class observation():
             (100*np.median([self.psf_result.resid_arr[i]/self.psf_result.data_arr[i] for i in range(self.n_exposures)]))+'%')
 
     def create_psf_subtracted(self,sci_ext=1,fname=None):
+        """
+        Use the best fit PSF models to create a PSF-subtracted image
+
+        Parameters
+        ----------
+        sci_ext : int
+            The SCI extension to use (e.g., if this is UVIS)
+        fname : str
+            Output filename
+        """
+
         try:
             temp = self.psf_result
         except:
@@ -543,30 +646,20 @@ class observation():
             x = float(self.psf_model_list[i].x_0.value)
             y = float(self.psf_model_list[i].y_0.value)
             psf_width = self.psf_model_list[i].data.shape[0]
-            print(x,y)
-            #yg, xg = np.mgrid[-1*(psf_width-1)/2:(psf_width+1)/2,-1*(psf_width-1)/2:(psf_width+1)/2].astype(int)
             yf, xf = np.mgrid[0:self.data_arr[i].shape[0],0:self.data_arr[i].shape[1]].astype(int)
 
-            #yf, xf = yg+int(y),xg+int(x)#
-            #yf, xf = yg+np.round(y).astype(int), xg+np.round(x).astype(int)
-            
-            psf_arr = self.psf_model_list[i](yf,xf)*self.pams[i]#self.psf_pams[i]
+
+            psf_arr = self.psf_model_list[i](yf,xf)*self.pams[i]
             if fname is None:
                 temp = astropy.io.fits.open(self.exposure_fnames[i])
-                temp['SCI',sci_ext].data = self.data_arr_pam[i]-psf_arr#astropy.nddata.utils.add_array(self.data_arr_pam[i],
-               #-1*psf_arr,
-               #[int(x),int(y)])
-               #[np.round(x).astype(int),np.round(y).astype(int)])
+                temp['SCI',sci_ext].data = self.data_arr_pam[i]-psf_arr
             else:
                 if isinstance(fname,str):
                     temp = astropy.io.fits.open(fname)
                 else:
                     temp = astropy.io.fits.open(fname[i])
-                temp['SCI',sci_ext].data-= psf_arr #astropy.nddata.utils.add_array(temp['SCI',sci_ext].data,
-                       #-1*psf_arr,
-                       #[int(x),int(y)])
-                       #[np.round(x).astype(int),np.round(y).astype(int)])
-            
+                temp['SCI',sci_ext].data-= psf_arr 
+  
 
             temp.writeto(self.exposure_fnames[i].replace('.fits','_resid.fits'),overwrite=True)
             temp.close()
@@ -791,6 +884,10 @@ class observation():
         return 
 
     def plot_psf_fit(self):
+        """
+        Plot the best-fit PSF model and residuals
+        """
+
         try:
             temp = self.psf_result.data_arr[0]
         except:
@@ -802,8 +899,11 @@ class observation():
         axes = np.atleast_2d(axes)
         for i in range(self.n_exposures):
             axes[i][0].imshow(self.psf_result.data_arr[i])
+            axes[i][0].set_title('Data')
             axes[i][1].imshow(self.psf_result.psf_arr[i])
+            axes[i][1].set_title('Model')
             axes[i][2].imshow(self.psf_result.resid_arr[i])
+            axes[i][2].set_title('Residual')
             for j in range(3):
                 axes[i][j].tick_params(
                     axis='both',          # changes apply to the x-axis
@@ -817,6 +917,15 @@ class observation():
         return fig
 
     def plot_psf_posterior(self,minweight=-np.inf):
+        """
+        Plot the posterior corner plot from nested sampling
+
+        Parameters
+        ----------
+        minweight : float
+            A minimum weight to show from the nested sampling
+            (to zoom in on posterior)
+        """
         import corner
         try:
             samples = self.psf_result.samples
@@ -847,6 +956,14 @@ class observation():
         plt.show()
 
     def plot_phot(self,method='psf'):
+        """
+        Plot the photometry
+
+        Parameters
+        ----------
+        method : str
+            psf or aperture
+        """
         try:
             if method=='aperture':
                 sncosmo.plot_lc(self.aperture_result.phot_cal_table)

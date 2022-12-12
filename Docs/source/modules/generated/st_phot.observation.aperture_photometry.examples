@@ -1,0 +1,39 @@
+
+
+Examples using ``st_phot.observation.aperture_photometry``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. start-sphx-glr-thumbnails
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Aperture Photometry">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_b_aperture_thumb.png
+    :alt: Aperture Photometry
+
+  :ref:`sphx_glr_examples_plot_b_aperture.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Aperture Photometry</div>
+    </div>
+
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_plot_b_aperture.py`
+
+.. raw:: html
+
+    </div>
+
