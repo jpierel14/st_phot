@@ -101,8 +101,19 @@ def calc_hst_psf_corr(ap_rad,instrument,band,pos,psf=None,sci_ext=1):
     yg, xg = np.mgrid[-1*(psf_width-1)/2:(psf_width+1)/2,-1*(psf_width-1)/2:(psf_width+1)/2].astype(int)
     yf, xf = yg+int(y+.5), xg+int(x+.5)
     psf = np.array(psf(xf,yf)).astype(float)
+    big_psf = np.sum(psf)
+
+    psf_width =ap_rad*2
+    psf.x_0 = psf_width/2#pos[0]
+    psf.y_0 = psf_width/2#pos[1]
+    x,y=(psf.x_0,psf.y_0)
+
+    yg, xg = np.mgrid[-1*(psf_width-1)/2:(psf_width+1)/2,-1*(psf_width-1)/2:(psf_width+1)/2].astype(int)
+    yf, xf = yg+int(y+.5), xg+int(x+.5)
+    psf = np.array(psf(xf,yf)).astype(float)
+    return(big_psf/np.sum(psf))
     #print('tot',float(simple_aperture_sum(psf,[250,250],100)))
-    return(simple_aperture_sum(psf,[250,250],100)/simple_aperture_sum(psf,[250,250],ap_rad))
+    #return(np.sum(psf)/simple_aperture_sum(psf,[250,250],100)/simple_aperture_sum(psf,[250,250],ap_rad))
 
 
     

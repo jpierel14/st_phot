@@ -91,7 +91,7 @@ For this example we download JWST cal images from MAST. We just use
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=1</i>
-    <table id="table140403173174352" class="table-striped table-bordered table-condensed">
+    <table id="table140429608239840" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str92</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/JWST/jw02767002001_02103_00001_nrcb3/jw02767002001_02103_00001_nrcb3_cal.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -111,17 +111,18 @@ the psf_photometry function, or else at least just do this once,
 save the ouptut, and then read it in and proceed to photometry
 for testing purposes.
 
-.. GENERATED FROM PYTHON SOURCE LINES 52-61
+.. GENERATED FROM PYTHON SOURCE LINES 52-62
 
 .. code-block:: default
 
 
     files = glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*cal.fits')
     print(files)
-    plant_location = SkyCoord('21:29:42.4275','+0:04:53.634',unit=(u.hourangle,u.deg))
+    plant_location = SkyCoord('21:29:42.4104','+0:04:53.253',unit=(u.hourangle,u.deg))
     jwst_obs = st_phot.observation(files)
-    psfs = st_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4,psf_width=9)
-    plt.imshow(psfs[0].data)
+    psfs = st_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4)
+    plt.imshow(extract_array(psfs[0].data,(9,9),(psfs[0].data.shape[0]/2,
+        psfs[0].data.shape[1]/2)))
     plt.show()
 
 
@@ -161,13 +162,13 @@ for testing purposes.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 62-65
+.. GENERATED FROM PYTHON SOURCE LINES 63-66
 
 **Examine the first Image**
 
 You can see we've chosen a region of the image with no sources.
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-79
+.. GENERATED FROM PYTHON SOURCE LINES 66-80
 
 .. code-block:: default
 
@@ -210,12 +211,12 @@ You can see we've chosen a region of the image with no sources.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 80-82
+.. GENERATED FROM PYTHON SOURCE LINES 81-83
 
 **Plant the PSF**
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 82-99
+.. GENERATED FROM PYTHON SOURCE LINES 83-100
 
 .. code-block:: default
 
@@ -248,12 +249,12 @@ You can see we've chosen a region of the image with no sources.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 100-102
+.. GENERATED FROM PYTHON SOURCE LINES 101-103
 
 **Measure PSF photometry and Aperture photometry for the source**
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 102-120
+.. GENERATED FROM PYTHON SOURCE LINES 103-121
 
 .. code-block:: default
 
@@ -272,10 +273,10 @@ You can see we've chosen a region of the image with no sources.
     jwst_obs.plot_psf_posterior(minweight=.0005)
     plt.show()
 
-    print('PSF Mag:',jwst_obs.psf_result.phot_cal_table['mag'])
+    print('PSF Mag:',float(jwst_obs.psf_result.phot_cal_table['mag']))
 
-    jwst_obs.aperture_photometry(plant_location,encircled_energy='70')
-    print('Aperture Mag:',jwst_obs.aperture_result.phot_cal_table['mag'])
+    jwst_obs.aperture_photometry(plant_location,encircled_energy='50')
+    print('Aperture Mag:',float(jwst_obs.aperture_result.phot_cal_table['mag']))
 
 
 .. rst-class:: sphx-glr-horizontal
@@ -291,7 +292,7 @@ You can see we've chosen a region of the image with no sources.
     *
 
       .. image-sg:: /examples/images/sphx_glr_plot_c_plant_005.png
-         :alt: flux = ${5.39}_{-0.12}^{+0.11}$, x0 = ${1843.88}_{-0.02}^{+0.02}$, y0 = ${160.12}_{-0.02}^{+0.02}$, bkg = ${0.25}_{-0.01}^{+0.01}$
+         :alt: flux = ${5.54}_{-0.12}^{+0.15}$, x0 = ${1834.49}_{-0.02}^{+0.02}$, y0 = ${149.25}_{-0.02}^{+0.02}$, bkg = ${0.26}_{-0.01}^{+0.01}$
          :srcset: /examples/images/sphx_glr_plot_c_plant_005.png
          :class: sphx-glr-multi-img
 
@@ -308,13 +309,9 @@ You can see we've chosen a region of the image with no sources.
     Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
     Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
       warnings.warn(
-    Finished PSF psf_photometry with median residuals of 6.51%
-    PSF Mag:        mag        
-    ------------------
-    26.066926990308957
-    Aperture Mag:       mag       
-    ----------------
-    25.9319767560215
+    Finished PSF psf_photometry with median residuals of 2.59%
+    PSF Mag: 25.975240433351242
+    Aperture Mag: 26.02872023857849
 
 
 
@@ -322,7 +319,7 @@ You can see we've chosen a region of the image with no sources.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  33.647 seconds)
+   **Total running time of the script:** ( 0 minutes  38.845 seconds)
 
 
 .. _sphx_glr_download_examples_plot_c_plant.py:

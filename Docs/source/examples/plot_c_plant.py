@@ -52,10 +52,11 @@ Observations.download_products(data_products_by_obs,extension='fits')
 
 files = glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*cal.fits')
 print(files)
-plant_location = SkyCoord('21:29:42.4275','+0:04:53.634',unit=(u.hourangle,u.deg))
+plant_location = SkyCoord('21:29:42.4104','+0:04:53.253',unit=(u.hourangle,u.deg))
 jwst_obs = st_phot.observation(files)
-psfs = st_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4,psf_width=9)
-plt.imshow(psfs[0].data)
+psfs = st_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4)
+plt.imshow(extract_array(psfs[0].data,(9,9),(psfs[0].data.shape[0]/2,
+    psfs[0].data.shape[1]/2)))
 plt.show()
 
 ####################################################################
@@ -114,7 +115,7 @@ plt.show()
 jwst_obs.plot_psf_posterior(minweight=.0005)
 plt.show()
 
-print('PSF Mag:',jwst_obs.psf_result.phot_cal_table['mag'])
+print('PSF Mag:',float(jwst_obs.psf_result.phot_cal_table['mag']))
 
-jwst_obs.aperture_photometry(plant_location,encircled_energy='70')
-print('Aperture Mag:',jwst_obs.aperture_result.phot_cal_table['mag'])
+jwst_obs.aperture_photometry(plant_location,encircled_energy='50')
+print('Aperture Mag:',float(jwst_obs.aperture_result.phot_cal_table['mag']))

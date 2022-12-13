@@ -27,7 +27,7 @@ from .wfc3_photometry.psf_tools.PSFUtils import make_models
 from .wfc3_photometry.psf_tools.PSFPhot import get_standard_psf
 
 __all__ = ['get_jwst_psf','get_hst_psf']
-def get_jwst_psf(st_obs,sky_location,num_psfs=16,psf_width=41):
+def get_jwst_psf(st_obs,sky_location,num_psfs=16,psf_width=101):
     inst = webbpsf.instrument(st_obs.instrument)
     inst.filter = st_obs.filter
     inst.detector=st_obs.detector
@@ -46,7 +46,7 @@ def get_jwst_psf(st_obs,sky_location,num_psfs=16,psf_width=41):
         psf_list.append(epsf_model)
     return psf_list
 
-def get_hst_psf(st_obs,sky_location,psf_width=21):
+def get_hst_psf(st_obs,sky_location,psf_width=101):
     grid = make_models(get_standard_psf(os.path.join(os.path.abspath(os.path.dirname(__file__)),
             'wfc3_photometry/psfs'),st_obs.filter,st_obs.detector))[0]
     psf_list = []
