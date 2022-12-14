@@ -210,6 +210,9 @@ class observation():
             plant_locations = [plant_locations]
         if isinstance(magnitudes,(int,float)):
             magnitudes = [magnitudes]*len(plant_locations)
+        if not isinstance(psf_model,list):
+            psf_model = [psf_model]
+        assert len(psf_model)==len(plant_locations)==len(magnitudes), "Must supply same number of psfs,plant_locations,mags"
         psf_corr,mod_psf = calc_jwst_psf_corr(psf_model.data.shape[0]/2,self.instrument,
             self.filter,self.wcs_list[0])
         for i in range(self.n_exposures):
