@@ -213,8 +213,8 @@ class observation():
         if not isinstance(psf_model,list):
             psf_model = [psf_model]
         assert len(psf_model)==len(plant_locations)==len(magnitudes), "Must supply same number of psfs,plant_locations,mags"
-        psf_corr,mod_psf = calc_jwst_psf_corr(psf_model.data.shape[0]/2,self.instrument,
-            self.filter,self.wcs_list[0])
+        #psf_corr,mod_psf = calc_jwst_psf_corr(psf_model.data.shape[0]/2,self.instrument,
+        #    self.filter,self.wcs_list[0])
         for i in range(self.n_exposures):
             temp = astropy.io.fits.open(self.exposure_fnames[i])
             for j in range(len(plant_locations)):
@@ -223,13 +223,13 @@ class observation():
                 else:
                     x,y = plant_locations[i]
                 flux = JWST_mag_to_flux(magnitudes[j],self.wcs_list[i])
-                psf_model.x_0 = x
-                psf_model.y_0 = y
-                psf_model.flux = flux/np.sum(psf_model.data)#/psf_corr
+                psf_model[j].x_0 = x
+                psf_model[j].y_0 = y
+                psf_model[j].flux = flux/np.sum(psf_model[j].data)#/psf_corr
                 #psf_arr = flux*psf_model.data/astropy.nddata.extract_array(\
                 #    self.pams[i],psf_model.data.shape,[x,y])
                 yf, xf = np.mgrid[0:temp['SCI',1].data.shape[0],0:temp['SCI',1].data.shape[1]].astype(int)
-                psf_arr = psf_model(yf,xf)
+                psf_arr = psf_model[j](yf,xf)
             
 
                 temp['SCI',1].data+=psf_arr# = astropy.nddata.add_array(temp['SCI',1].data,
