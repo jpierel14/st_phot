@@ -215,25 +215,42 @@ class observation():
         assert len(psf_model)==len(plant_locations)==len(magnitudes), "Must supply same number of psfs,plant_locations,mags"
         #psf_corr,mod_psf = calc_jwst_psf_corr(psf_model.data.shape[0]/2,self.instrument,
         #    self.filter,self.wcs_list[0])
+        
         for i in range(self.n_exposures):
+            plant_info = {key:[] for key in ['x','y','ra','dec','mag','flux']}
             temp = astropy.io.fits.open(self.exposure_fnames[i])
             for j in range(len(plant_locations)):
-                if isinstance(plant_locations[i],astropy.coordinates.SkyCoord):
-                    y,x = astropy.wcs.utils.skycoord_to_pixel(plant_locations[i],self.wcs_list[i])
+                if isinstance(plant_locations[j],astropy.coordinates.SkyCoord):
+                    y,x = astropy.wcs.utils.skycoord_to_pixel(plant_locations[j],self.wcs_list[i])
+                    ra = plant_locations[j].ra.value
+                    dec = plant_locations[j].dec.value
                 else:
-                    x,y = plant_locations[i]
+                    x,y = plant_locations[j]
+                    sc = astropy.wcs.utils.pixel_to_skycoord(x,y,self.wcs_list[i])
+                    ra = sc.ra.value
+                    dec = sc.dec.value
+
                 flux = JWST_mag_to_flux(magnitudes[j],self.wcs_list[i])
                 psf_model[j].x_0 = x
                 psf_model[j].y_0 = y
                 psf_model[j].flux = flux/np.sum(psf_model[j].data)#/psf_corr
+             
                 #psf_arr = flux*psf_model.data/astropy.nddata.extract_array(\
                 #    self.pams[i],psf_model.data.shape,[x,y])
                 yf, xf = np.mgrid[0:temp['SCI',1].data.shape[0],0:temp['SCI',1].data.shape[1]].astype(int)
                 psf_arr = psf_model[j](yf,xf)
-            
+                plant_info['x'].append(x)
+                plant_info['y'].append(y)
+                plant_info['ra'].append(ra)
+                plant_info['dec'].append(dec)
+                plant_info['mag'].append(magnitudes[j])
+                plant_info['flux'].append(np.sum(psf_arr))
+                
 
                 temp['SCI',1].data+=psf_arr# = astropy.nddata.add_array(temp['SCI',1].data,
                     #psf_arr,[x,y])
+            astropy.table.Table(plant_info).write(self.exposure_fnames[i].replace('.fits','_plant.dat'),overwrite=True,
+                                                  format='ascii')
             temp.writeto(self.exposure_fnames[i].replace('.fits','_plant.fits'),overwrite=True)
 
 
