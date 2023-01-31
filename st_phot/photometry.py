@@ -3,6 +3,7 @@ import astropy
 import sncosmo
 import nestle
 import corner
+import photutils
 from collections import OrderedDict
 from copy import copy,deepcopy
 import matplotlib.pyplot as plt
@@ -117,7 +118,7 @@ class observation3():
             flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(result['aper_sum_corrected'][-1],
                                                           result['aperture_sum_err'][-1],
                                                           self.wcs)
-            mjd = self.prim_header['MJD-AVG']
+            mjd = self.sci_header['MJD-AVG']
         else:
             flux,fluxerr,mag,magerr,zp = calibrate_HST_flux(result['aper_sum_corrected'][-1],
                                                           result['aperture_sum_err'][-1],
@@ -160,6 +161,8 @@ class observation():
         self.instrument = self.prim_headers[0]['INSTRUME']
         try:
             self.detector = self.prim_headers[0]['DETECTOR']
+            self.detector = self.detector.replace('LONG','5')
+            self.detector = self.detector[:5]
         except:
             self.detector = None
 
@@ -354,7 +357,7 @@ class observation():
 
     def psf_photometry(self,psf_model,sky_location=None,xy_positions=[],fit_width=None,background=None,
                         fit_flux='single',fit_centroid='pixel',fit_bkg=False,bounds={},npoints=100,use_MLE=False,
-                        maxiter=None):
+                        maxiter=None,find_centroid=False,minVal=False):
         """
         st_phot psf photometry class for level 2 data.
 
@@ -394,6 +397,8 @@ class observation():
             average of the posterior samples
         maxiter : None or int
             If None continue sampling until convergence, otherwise defines the max number of iterations
+        find_centroid : bool
+            If True, then tries to find the centroid around your chosen location.
         """
         assert sky_location is not None or len(xy_positions)==self.n_exposures,\
         "Must supply sky_location or xy_positions for every exposure"
@@ -450,18 +455,36 @@ class observation():
                 xi,yi = xy_positions[im]
             else:
                 yi,xi = astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs_list[im])
-
-            centers.append([xi,yi])
+            
+            
             yg, xg = np.mgrid[-1*(fit_width-1)/2:(fit_width+1)/2,
                               -1*(fit_width-1)/2:(fit_width+1)/2].astype(int)
             yf, xf = yg+np.round(yi).astype(int), xg+np.round(xi).astype(int)
             
+            
+            cutout = self.data_arr_pam[im][xf, yf]
+            if find_centroid:
+                xi2,yi2 = photutils.centroids.centroid_com(cutout)
+                print(xi,yi,xi2,yi2,(xi2-(fit_width-1)/2),(yi2-(fit_width-1)/2))
+                plt.imshow(cutout)
+                plt.show()
+
+                xi += (xi2-(fit_width-1)/2)
+                yi += (yi2-(fit_width-1)/2)
+                yf, xf = yg+np.round(yi).astype(int), xg+np.round(xi).astype(int)
+                cutout = self.data_arr_pam[im][xf, yf]
+                plt.imshow(cutout)
+                plt.show()
+            cutout[cutout<minVal] = 0
+
+            centers.append([xi,yi])
+
             all_xf.append(xf)
             all_yf.append(yf)
-            cutout = self.data_arr_pam[im][xf, yf]
-            
             err = self.err_arr[im][xf, yf]
+            err[np.isnan(err)] = np.nanmax(err)
             err[err<=0] = np.max(err)
+
             cutouts.append(cutout-all_bg_est[im])
             cutout_errs.append(err)
             
@@ -509,10 +532,10 @@ class observation():
             for i in range(len(pnames)):
                 if 'flux' in pnames[i]:
                     pbounds[pnames[i]] = np.array(bounds['flux'])+p0s[i]
-                    if pbounds[pnames[i]][0]<0:
-                        pbounds[pnames[i]][0] = 0
-                    if pbounds[pnames[i]][1]<=0:
-                        raise RuntimeError('Your flux bounds are both <=0.')
+                    #if pbounds[pnames[i]][0]<0:
+                    #    pbounds[pnames[i]][0] = 0
+                    #if pbounds[pnames[i]][1]<=0:
+                    #    raise RuntimeError('Your flux bounds are both <=0.')
                 else:
                     if fit_centroid=='wcs':
                         px_scale = astropy.wcs.utils.proj_plane_pixel_scales(self.wcs_list[0])[0] *\
@@ -548,9 +571,14 @@ class observation():
         self.nest_psf(pnames,pbounds,cutouts,cutout_errs,all_xf,all_yf,
                         psf_width=fit_width,npoints=npoints,use_MLE=use_MLE,maxiter=maxiter)
 
-    
-        result_cal = {'ra':[],'ra_err':[],'dec':[],'dec_err':[],'x':[],'x_err':[],
+        if fit_centroid!='fixed':
+            result_cal = {'ra':[],'ra_err':[],'dec':[],'dec_err':[],'x':[],'x_err':[],
                       'y':[],'y_err':[],'mjd':[],
+                      'flux':[],'fluxerr':[],'filter':[],
+                      'zp':[],'mag':[],'magerr':[],'zpsys':[],'exp':[]}
+        else:
+            result_cal = {'ra':[],'dec':[],'x':[],
+                      'y':[],'mjd':[],
                       'flux':[],'fluxerr':[],'filter':[],
                       'zp':[],'mag':[],'magerr':[],'zpsys':[],'exp':[]}
         model_psf = None
@@ -585,14 +613,14 @@ class observation():
             else:
                 x = self.psf_model_list[i].x_0
                 y = self.psf_model_list[i].y_0
-                xerr = self.psf_result.errors['x%i'%i]
-                yerr = self.psf_result.errors['y%i'%i]
+                #xerr = self.psf_result.errors['x%i'%i]
+                #yerr = self.psf_result.errors['y%i'%i]
                 sc = astropy.wcs.utils.pixel_to_skycoord(y,x,self.wcs_list[i])
                 ra = sc.ra.value
                 dec = sc.dec.value
-                sc2 = astropy.wcs.utils.pixel_to_skycoord(y+yerr,x+xerr,self.wcs_list[i])
-                raerr = np.abs(sc2.ra.value-ra)
-                decerr = np.abs(sc2.dec.value-dec)
+                #sc2 = astropy.wcs.utils.pixel_to_skycoord(y+yerr,x+xerr,self.wcs_list[i])
+                #raerr = np.abs(sc2.ra.value-ra)
+                #decerr = np.abs(sc2.dec.value-dec)
 
             if 'bkg' in self.psf_result.vparam_names:
                 bk_std = self.psf_result.errors['bkg']
@@ -610,12 +638,13 @@ class observation():
             flux_sum = np.sum(psf_arr)#simple_aperture_sum(psf_arr,np.atleast_2d([y,x]),10)
 
             if self.telescope == 'JWST':
-                psf_corr,model_psf = calc_jwst_psf_corr(self.psf_model_list[i].shape[0]/2,self.instrument,self.filter,self.wcs_list[i],psf=model_psf)
-                flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(flux_sum,#*psf_corr,
+                #psf_corr,model_psf = calc_jwst_psf_corr(self.psf_model_list[i].shape[0]/2,self.instrument,self.filter,self.wcs_list[i],psf=model_psf)
+                psf_corr = 1
+                flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(flux_sum*psf_corr,
                     np.sqrt(((self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
                     flux_sum*psf_corr)**2+bk_std**2),self.wcs_list[i])
             else:
-                psf_corr = calc_hst_psf_corr(self.psf_model_list[i].shape[0]/2,self.detector,self.filter,[x,y],'/Users/jpierel/DataBase/HST/psfs')
+                psf_corr = 1#calc_hst_psf_corr(self.psf_model_list[i].shape[0]/2,self.detector,self.filter,[x,y],'/Users/jpierel/DataBase/HST/psfs')
 
                 flux,fluxerr,mag,magerr,zp = calibrate_HST_flux(flux_sum*psf_corr,
                     np.sqrt(((self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
@@ -636,18 +665,23 @@ class observation():
             result_cal['magerr'].append(magerr)
             result_cal['zpsys'].append('ab')
             result_cal['exp'].append(os.path.basename(self.exposure_fnames[i]))
-            result_cal['ra_err'].append(raerr)
-            result_cal['dec_err'].append(decerr)
+            if fit_centroid!='fixed':
+                result_cal['ra_err'].append(raerr)
+                result_cal['dec_err'].append(decerr)
+                result_cal['x_err'].append(xerr)
+                result_cal['y_err'].append(yerr)
             result_cal['ra'].append(ra)
             result_cal['dec'].append(dec)
-            result_cal['x_err'].append(xerr)
-            result_cal['y_err'].append(yerr)
+            
 
         self.psf_result.phot_cal_table = astropy.table.Table(result_cal)
         self.psf_pams = psf_pams
 
         print('Finished PSF psf_photometry with median residuals of %.2f'%\
-            (100*np.median([self.psf_result.resid_arr[i]/self.psf_result.data_arr[i] for i in range(self.n_exposures)]))+'%')
+            (100*np.median([np.sum(self.psf_result.resid_arr[i])/\
+                np.sum(self.psf_result.data_arr[i]) for i in range(self.n_exposures)]))+'%')
+            #(100*np.median([np.median(self.psf_result.resid_arr[i]/\
+            #    self.psf_result.data_arr[i]) for i in range(self.n_exposures)]))+'%')
 
     def create_psf_subtracted(self,sci_ext=1,fname=None):
         """
@@ -674,18 +708,20 @@ class observation():
             yf, xf = np.mgrid[0:self.data_arr[i].shape[0],0:self.data_arr[i].shape[1]].astype(int)
 
 
-            psf_arr = self.psf_model_list[i](yf,xf)*self.pams[i]
+            psf_arr = self.psf_model_list[i](yf,xf)*self.prim_headers[i]['EXPTIME']
+            print(np.max(psf_arr))
+
             if fname is None:
                 temp = astropy.io.fits.open(self.exposure_fnames[i])
-                temp['SCI',sci_ext].data = self.data_arr_pam[i]-psf_arr
+                #temp['SCI',sci_ext].data = self.data_arr[i]-psf_arr
             else:
                 if isinstance(fname,str):
                     temp = astropy.io.fits.open(fname)
                 else:
                     temp = astropy.io.fits.open(fname[i])
-                temp['SCI',sci_ext].data-= psf_arr 
-  
-
+            temp['SCI',sci_ext].data-= psf_arr 
+            print(np.max(temp['SCI',sci_ext].data))
+            #print()
             temp.writeto(self.exposure_fnames[i].replace('.fits','_resid.fits'),overwrite=True)
             temp.close()
         return [self.exposure_fnames[i].replace('.fits','_resid.fits') for i in range(self.n_exposures)]
@@ -825,7 +861,6 @@ class observation():
                 # print(np.sum(fluxes[i]),np.sum(mflux))
                 #sys.exit()
                 total+=np.sum(((fluxes[i]-mflux)/fluxerrs[i])**2)#*weights)**2)
-                
             return total
         
         
@@ -920,7 +955,7 @@ class observation():
             return
 
 
-        fig,axes = plt.subplots(self.n_exposures,3)
+        fig,axes = plt.subplots(self.n_exposures,3,figsize=(int(2*self.n_exposures),10))
         axes = np.atleast_2d(axes)
         for i in range(self.n_exposures):
             norm1 = astropy.visualization.simple_norm(self.psf_result.data_arr[i],stretch='linear')
