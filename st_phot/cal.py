@@ -64,7 +64,10 @@ def calibrate_HST_flux(flux,fluxerr,primary_header,sci_header):
         zp = -2.5*np.log10(photflam)-5*np.log10(photplam)-2.408
 
     mag = -2.5*np.log10(flux)+zp
-    return(float(flux),float(fluxerr),float(mag),float(magerr),float(zp))
+    try:
+        return(float(flux),float(fluxerr),float(mag),float(magerr),float(zp))
+    except:
+        return(np.array(flux),np.array(fluxerr),np.array(mag),np.array(magerr),np.array(zp))
 
 
 def calc_jwst_psf_corr(ap_rad,instrument,band,imwcs,oversample=4,show_plot=False,psf=None):
