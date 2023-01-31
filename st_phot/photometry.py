@@ -103,37 +103,37 @@ class observation3():
                                             epadu=epadu)
         for k in phot.keys():
             if k in result.keys():
-                result[k].append(float(phot[k]))
-        result['pos_x'].append(positions[0][0])
-        result['pos_y'].append(positions[0][1])
+                result[k] = phot[k]
+        result['pos_x'] = [positions[i][0] for i in range(len(positions))]
+        result['pos_y'] = [positions[i][1] for i in range(len(positions))]
         if self.telescope.lower()=='jwst':
-            result['aper_sum_corrected'].append(float(phot['aper_sum_bkgsub'] * apcorr))
-            result['aperture_sum_err'][-1]*= apcorr
+            result['aper_sum_corrected'] = np.array(phot['aper_sum_bkgsub'] * apcorr)
+            result['aperture_sum_err']*= apcorr
         else:
-            result['aper_sum_corrected'].append(float(phot['aper_sum_bkgsub'] / apcorr))
-            result['aperture_sum_err'][-1]/= apcorr
-        result['exp'].append(os.path.basename(self.fname))
+            result['aper_sum_corrected'] = np.array(phot['aper_sum_bkgsub'] / apcorr)
+            result['aperture_sum_err']/= apcorr
+        result['exp'] = [os.path.basename(self.fname)]*len(phot)
 
         if self.telescope=='JWST':
-            flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(result['aper_sum_corrected'][-1],
-                                                          result['aperture_sum_err'][-1],
+            flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(result['aper_sum_corrected'],
+                                                          result['aperture_sum_err'],
                                                           self.wcs)
             mjd = self.sci_header['MJD-AVG']
         else:
-            flux,fluxerr,mag,magerr,zp = calibrate_HST_flux(result['aper_sum_corrected'][-1],
-                                                          result['aperture_sum_err'][-1],
+            flux,fluxerr,mag,magerr,zp = calibrate_HST_flux(result['aper_sum_corrected'],
+                                                          result['aperture_sum_err'],
                                                           self.prim_header,
                                                           self.sci_header)
             mjd = np.median([self.prim_header['EXPSTART'],self.prim_header['EXPEND']])
-        result_cal['flux'].append(flux)
-        result_cal['flux_err'].append(fluxerr)
-        result_cal['mag'].append(mag)
-        result_cal['magerr'].append(magerr)
-        result_cal['filter'].append(self.filter)
-        result_cal['zp'].append(zp)
-        result_cal['zpsys'].append('ab')
-        result_cal['exp'].append(os.path.basename(self.fname))
-        result_cal['mjd'].append(mjd)
+        result_cal['flux'] = flux
+        result_cal['flux_err'] = fluxerr
+        result_cal['mag'] = mag
+        result_cal['magerr'] = magerr
+        result_cal['filter'] = [self.filter]*len(mag)
+        result_cal['zp'] = [zp]*len(mag)
+        result_cal['zpsys'] = ['ab']*len(mag)
+        result_cal['exp'] = [os.path.basename(self.fname)]*len(mag)
+        result_cal['mjd'] = [mjd]*len(mag)
         res = sncosmo.utils.Result(radius=radius,
                    apcorr=apcorr,
                    sky_an=sky,
