@@ -465,16 +465,16 @@ class observation():
             cutout = self.data_arr_pam[im][xf, yf]
             if find_centroid:
                 xi2,yi2 = photutils.centroids.centroid_com(cutout)
-                print(xi,yi,xi2,yi2,(xi2-(fit_width-1)/2),(yi2-(fit_width-1)/2))
-                plt.imshow(cutout)
-                plt.show()
+                #print(xi,yi,xi2,yi2,(xi2-(fit_width-1)/2),(yi2-(fit_width-1)/2))
+                #plt.imshow(cutout)
+                #plt.show()
 
                 xi += (xi2-(fit_width-1)/2)
                 yi += (yi2-(fit_width-1)/2)
                 yf, xf = yg+np.round(yi).astype(int), xg+np.round(xi).astype(int)
                 cutout = self.data_arr_pam[im][xf, yf]
-                plt.imshow(cutout)
-                plt.show()
+                #plt.imshow(cutout)
+                #plt.show()
             cutout[cutout<minVal] = 0
 
             centers.append([xi,yi])
