@@ -13,8 +13,313 @@ from stsci.skypac import pamutils
 from .util import generic_aperture_phot,jwst_apcorr,hst_apcorr,simple_aperture_sum
 from .cal import calibrate_JWST_flux,calibrate_HST_flux,calc_jwst_psf_corr,calc_hst_psf_corr,JWST_mag_to_flux
 
-__all__ = ['observation3','observation']
-class observation3():
+__all__ = ['observation3','observation2']
+
+class observation():
+    def __init__(self):
+        pass
+
+    def nest_psf(self,vparam_names, bounds,fluxes, fluxerrs,xs,ys,psf_width=7,use_MLE=False,
+                       minsnr=0., priors=None, ppfs=None, npoints=100, method='single',
+                       maxiter=None, maxcall=None, modelcov=False, rstate=None,
+                       verbose=False, warn=True, **kwargs):
+
+        # Taken from SNCosmo nest_lc
+        # experimental parameters
+        tied = kwargs.get("tied", None)
+
+        
+
+        vparam_names = list(vparam_names)
+        if ppfs is None:
+            ppfs = {}
+        if tied is None:
+            tied = {}
+        
+        # Convert bounds/priors combinations into ppfs
+        if bounds is not None:
+            for key, val in bounds.items():
+                if key in ppfs:
+                    continue  # ppfs take priority over bounds/priors
+                a, b = val
+                if priors is not None and key in priors:
+                    # solve ppf at discrete points and return interpolating
+                    # function
+                    x_samples = np.linspace(0., 1., 101)
+                    ppf_samples = sncosmo.utils.ppf(priors[key], x_samples, a, b)
+                    f = sncosmo.utils.Interp1D(0., 1., ppf_samples)
+                else:
+                    f = sncosmo.utils.Interp1D(0., 1., np.array([a, b]))
+                ppfs[key] = f
+
+        # NOTE: It is important that iparam_names is in the same order
+        # every time, otherwise results will not be reproducible, even
+        # with same random seed.  This is because iparam_names[i] is
+        # matched to u[i] below and u will be in a reproducible order,
+        # so iparam_names must also be.
+
+        iparam_names = [key for key in vparam_names if key in ppfs]
+
+        ppflist = [ppfs[key] for key in iparam_names]
+        npdim = len(iparam_names)  # length of u
+        ndim = len(vparam_names)  # length of v
+
+        # Check that all param_names either have a direct prior or are tied.
+        for name in vparam_names:
+            if name in iparam_names:
+                continue
+            if name in tied:
+                continue
+            raise ValueError("Must supply ppf or bounds or tied for parameter '{}'"
+                             .format(name))
+
+        def prior_transform(u):
+            d = {}
+            for i in range(npdim):
+                d[iparam_names[i]] = ppflist[i](u[i])
+            v = np.empty(ndim, dtype=float)
+            for i in range(ndim):
+                key = vparam_names[i]
+                if key in d:
+                    v[i] = d[key]
+                else:
+                    v[i] = tied[key](d)
+            return v
+        
+        pos_start = [i for i in range(len(vparam_names))]
+        
+        if len([x for x in vparam_names if 'flux' in x])>1:
+            multi_flux = True
+        else:
+            multi_flux = False
+
+        if np.any(['dec' in x for x in vparam_names]):
+            fit_radec = True
+        else:
+            fit_radec = False
+        if np.any(['y' in x for x in vparam_names]):
+            fit_pixel = True
+        else:
+            fit_pixel = False
+
+        if np.any(['bkg' in x for x in vparam_names]):
+            fit_bkg = True
+        else:
+            fit_bkg = False
+
+        import matplotlib.pyplot as plt
+        
+        sums = [np.sum(f) for f in fluxes]
+
+        def chisq_likelihood(parameters):
+            total = 0
+            for i in range(len(fluxes)):
+                posx = xs[i]
+                posy = ys[i]
+                
+                if multi_flux:
+                    self.psf_model_list[i].flux = parameters[vparam_names.index('flux%i'%i)]
+                else:
+                    self.psf_model_list[i].flux = parameters[vparam_names.index('flux')]
+
+                if fit_radec:
+                    sky_location = astropy.coordinates.SkyCoord(parameters[vparam_names.index('ra')],
+                                                                parameters[vparam_names.index('dec')],
+                                                                unit=astropy.units.deg)
+                    y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs_list[i])
+                    self.psf_model_list[i].x_0 = x
+                    self.psf_model_list[i].y_0 = y
+                elif fit_pixel:
+                    self.psf_model_list[i].x_0 = parameters[vparam_names.index('x%i'%(i))]
+                    self.psf_model_list[i].y_0 = parameters[vparam_names.index('y%i'%(i))]
+
+                #print(posx)
+                #print(posy)
+                #print(self.psf_model_list[i].flux)
+                #print(fluxes[i])
+                mflux = self.psf_model_list[i](posx,posy)
+                #print(mflux)
+                
+                if fit_bkg:
+                    if multi_flux:
+                        mflux+=parameters[vparam_names.index('bkg%i'%i)]
+                    else:
+                        mflux+=parameters[vparam_names.index('bkg')]
+                weights = (fluxes[i]/np.max(fluxes[i]))
+                weights[weights<0] = 0
+                weights/=np.sum(weights)
+                #mflux*=self.pams[i][posx,posy]
+                #plt.imshow(fluxes[i],origin='lower')
+                #plt.show()
+                # plt.imshow(mflux)
+                # plt.show()
+                # print(np.sum(fluxes[i]),np.sum(mflux))
+                #print(weights*((fluxes[i]-mflux)**2))
+                #sys.exit()
+                total+=np.sum(((fluxes[i]-mflux)/fluxerrs[i])**2)#fluxerrs[i])**2)#*weights)**2)
+
+            #print(total)
+            #sys.exit()
+            return total
+        
+        
+        def loglike(parameters):
+            chisq = chisq_likelihood(parameters)
+            return(-.5*chisq)
+        
+
+        res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
+                            npoints=npoints, method=method, maxiter=maxiter,
+                            maxcall=maxcall, rstate=rstate,
+                            callback=(nestle.print_progress if verbose else None))
+
+        vparameters, cov = nestle.mean_and_cov(res.samples, res.weights)
+
+        res = sncosmo.utils.Result(niter=res.niter,
+                                   ncall=res.ncall,
+                                   logz=res.logz,
+                                   logzerr=res.logzerr,
+                                   h=res.h,
+                                   samples=res.samples,
+                                   weights=res.weights,
+                                   logvol=res.logvol,
+                                   logl=res.logl,
+                                   errors=OrderedDict(zip(vparam_names,
+                                                          np.sqrt(np.diagonal(cov)))),
+                                   vparam_names=copy(vparam_names),
+                                   bounds=bounds,
+                                   best=vparameters,
+                                   data_arr = fluxes,
+                                   psf_arr = None,
+                                   big_psf_arr = None,
+                                   resid_arr = None,
+                                   phot_cal_table = None)
+
+        if use_MLE:
+            best_ind = res.logl.argmax()
+            for i in range(len(vparam_names)):
+                res.best[i] = res.samples[best_ind,i]
+            params = [[res.samples[best_ind, i]-res.errors[vparam_names[i]], res.samples[best_ind, i], res.samples[best_ind, i]+res.errors[vparam_names[i]]]
+                      for i in range(len(vparam_names))]
+
+        all_mflux_arr = []
+        all_resid_arr = []
+        
+        for i in range(len(fluxes)):
+            posx = xs[i]
+            posy = ys[i]
+            
+            if multi_flux:
+                self.psf_model_list[i].flux = res.best[vparam_names.index('flux%i'%i)]
+            else:
+                self.psf_model_list[i].flux = res.best[vparam_names.index('flux')]
+
+            if fit_radec:
+                sky_location = astropy.coordinates.SkyCoord(res.best[vparam_names.index('ra')],
+                                                            res.best[vparam_names.index('dec')],
+                                                            unit=astropy.units.deg)
+                y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs_list[i])
+                self.psf_model_list[i].x_0 = x
+                self.psf_model_list[i].y_0 = y
+            elif fit_pixel:
+                self.psf_model_list[i].x_0 = res.best[vparam_names.index('x%i'%(i))]
+                self.psf_model_list[i].y_0 = res.best[vparam_names.index('y%i'%(i))]
+            
+            mflux = self.psf_model_list[i](posx,posy)
+            all_mflux_arr.append(mflux*self.pams[i][posx,posy])
+
+            if fit_bkg:
+                if multi_flux:
+                    res.data_arr[i]-=res.best[vparam_names.index('bkg%i'%i)]
+                else:
+                    res.data_arr[i]-=res.best[vparam_names.index('bkg')]
+            #mflux*=self.pams[i][posx,posy]
+            resid = res.data_arr[i]-mflux
+            all_resid_arr.append(resid)
+            
+        res.psf_arr = all_mflux_arr
+        res.resid_arr = all_resid_arr
+        self.psf_result = res
+        return
+
+    def plot_psf_fit(self):
+        """
+        Plot the best-fit PSF model and residuals
+        """
+
+        try:
+            temp = self.psf_result.data_arr[0]
+        except:
+            print('Must fit PSF before plotting.')
+            return
+
+
+        fig,axes = plt.subplots(self.n_exposures,3,figsize=(int(3*self.n_exposures),10))
+        axes = np.atleast_2d(axes)
+        for i in range(self.n_exposures):
+            norm1 = astropy.visualization.simple_norm(self.psf_result.data_arr[i],stretch='linear')
+            axes[i][0].imshow(self.psf_result.data_arr[i],
+                norm=norm1)
+            axes[i][0].set_title('Data')
+            axes[i][1].imshow(self.psf_result.psf_arr[i],
+                norm=norm1)
+            axes[i][1].set_title('Model')
+            axes[i][2].imshow(self.psf_result.resid_arr[i],
+                norm=norm1)
+            axes[i][2].set_title('Residual')
+            for j in range(3):
+                axes[i][j].tick_params(
+                    axis='both',          # changes apply to the x-axis
+                    which='both',      # both major and minor ticks are affected
+                    bottom=False,      # ticks along the bottom edge are off
+                    left=False,         # ticks along the top edge are off
+                    labelbottom=False,
+                    labelleft=False) # labels along the bottom edge are off
+        plt.tight_layout()
+        plt.show()
+        return fig
+
+    def plot_psf_posterior(self,minweight=-np.inf):
+        """
+        Plot the posterior corner plot from nested sampling
+
+        Parameters
+        ----------
+        minweight : float
+            A minimum weight to show from the nested sampling
+            (to zoom in on posterior)
+        """
+        import corner
+        try:
+            samples = self.psf_result.samples
+        except:
+            print('Must fit PSF before plotting.')
+            return
+        weights = self.psf_result.weights
+        samples = samples[weights>minweight]
+        weights = weights[weights>minweight]
+
+        fig = corner.corner(
+            samples,
+            weights=weights,
+            labels=self.psf_result.vparam_names,
+            quantiles=(0.16, .5, 0.84),
+            bins=20,
+            color='k',
+            show_titles=True,
+            title_fmt='.2f',
+            smooth1d=False,
+            smooth=True,
+            fill_contours=True,
+            plot_contours=False,
+            plot_density=True,
+            use_mathtext=True,
+            title_kwargs={"fontsize": 11},
+            label_kwargs={'fontsize': 16})
+        plt.show()
+
+
+class observation3(observation):
     """
     st_phot class for level 3 (drizzled) data
     """
@@ -23,13 +328,14 @@ class observation3():
         self.fits = astropy.io.fits.open(self.fname)
         self.data = self.fits['SCI',1].data
         try:
-            self.err = np.zeros(self.data.shape)
-            #self.err = self.fits['ERR',1]
+            self.err = 1./np.sqrt(self.fits['WHT',1].data)
         except:
-            self.err = 1./np.sqrt(self.fits['WHT',1])
+            self.err = None
         self.prim_header = self.fits[0].header
         self.sci_header = self.fits['SCI',1].header
         self.wcs = astropy.wcs.WCS(self.sci_header)
+        self.pams = [np.ones(self.data.shape)]
+        self.n_exposures = 1
         try:
             self.telescope = self.prim_header['TELESCOP']
             self.instrument = self.prim_header['INSTRUME']
@@ -45,6 +351,249 @@ class observation3():
             self.instrument = 'NIRCam'
 
 
+    def psf_photometry(self,psf_model,sky_location=None,xy_position=None,fit_width=None,background=None,
+                        fit_flux=True,fit_centroid=True,fit_bkg=False,bounds={},npoints=100,use_MLE=False,
+                        maxiter=None,find_centroid=False,minVal=False):
+        """
+        st_phot psf photometry class for level 2 data.
+
+        Parameters
+        ----------
+        psf_model : :class:`~photutils.psf.EPSFModel`
+            In reality this does not need to be an EPSFModel, but just any
+            photutils psf model class.
+        sky_location : :class:`~astropy.coordinates.SkyCoord`
+            Location of your source
+        xy_positions : list
+            xy position of your source in each exposure. Must supply this or
+            sky_location but this takes precedent.
+        fit_width : int
+            PSF width to fit (recommend odd number)
+        background : float or list
+            float, list of float, array, or list of array defining the background
+            of your data. If you define an array, it should be of the same shape
+            as fit_width
+        fit_flux : str
+            One of 'single','multi','fixed'. Single is a single flux across all
+            exposures, multi fits a flux for every exposure, and fixed only
+            fits the position
+        fit_centroid : str
+            One of 'pixel','wcs','fixed'. Pixel fits a pixel location of the
+            source in each exposure, wcs fits a single RA/DEC across all exposures,
+            and fixed only fits the flux and not position.
+        fit_bkg : bool
+            Fit for a constant background simultaneously with the PSF fit.
+        bounds : dict
+            Bounds on each parameter. 
+        npoints : int
+            Number of points in the nested sampling (higher is better posterior sampling, 
+            but slower)
+        use_MLE : bool
+            Use the maximum likelihood to define best fit parameters, otherwise use a weighted
+            average of the posterior samples
+        maxiter : None or int
+            If None continue sampling until convergence, otherwise defines the max number of iterations
+        find_centroid : bool
+            If True, then tries to find the centroid around your chosen location.
+        """
+        assert sky_location is not None or xy_position is not None,\
+        "Must supply sky_location or xy_positions for every exposure"
+
+
+        assert len(bounds)>0,\
+            "Must supply bounds"
+
+        if not fit_flux and not fit_centroid:
+            print('Nothing to do, fit flux and/or position.')
+            return
+
+
+        if fit_width is None:
+            try:
+                fit_width = psf_model.data.shape[0]
+            except:
+                 RuntimeError("If you do not supply fit_width, your psf needs to have a data attribute (i.e., be an ePSF")
+
+        if fit_width%2==0:
+            print('PSF fitting width is even, subtracting 1.')
+            fit_width-=1
+
+        centers = []
+        all_xf = []
+        all_yf = []
+        cutouts = []
+        cutout_errs = []
+        fluxg = []
+
+        if background is None:
+            all_bg_est = 0 #replace with bkg method
+            if not fit_bkg:
+                print('Warning: No background subtracting happening here.')
+        else:
+            all_bg_est = background
+
+        self.psf_model_list = [psf_model]
+
+        if xy_position is None:
+            yi,xi = astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs)
+            
+            
+        yg, xg = np.mgrid[-1*(fit_width-1)/2:(fit_width+1)/2,
+                          -1*(fit_width-1)/2:(fit_width+1)/2].astype(int)
+        yf, xf = yg+np.round(yi).astype(int), xg+np.round(xi).astype(int)
+
+        
+        cutout = self.data[xf, yf]
+        if find_centroid:
+            xi2,yi2 = photutils.centroids.centroid_com(cutout)
+
+            xi += (xi2-(fit_width-1)/2)
+            yi += (yi2-(fit_width-1)/2)
+            yf, xf = yg+np.round(yi).astype(int), xg+np.round(xi).astype(int)
+            cutout = self.data[xf, yf]
+        all_xf.append(xf)
+        all_yf.append(yf)
+        cutout[cutout<minVal] = 0
+
+        center = [xi,yi]
+        centers.append(center)
+        
+        err = self.err[xf, yf]
+        err[np.isnan(err)] = np.nanmax(err)
+        err[err<=0] = np.max(err)
+        cutout_errs.append(err)
+        cutout -= all_bg_est
+        cutouts.append(cutout)
+        if fit_flux:
+            f_guess = [np.sum(cutout)]
+            pnames = ['flux']
+        else:
+            f_guess = []
+            pnames = []
+        
+        if fit_centroid:
+            pnames.append(f'x0')
+            pnames.append(f'y0')
+            p0s = np.append(f_guess,[center]).flatten()
+        
+                  
+        else:
+            p0s = np.array(f_guess)
+            
+            self.psf_model_list[0].x_0 = center[0]
+            self.psf_model_list[0].y_0 = center[1]
+
+        pnames = np.array(pnames).ravel()
+
+        if not np.all([x in bounds.keys() for x in pnames]):
+            pbounds = {}
+            for i in range(len(pnames)):
+                if 'flux' in pnames[i]:
+                    pbounds[pnames[i]] = np.array(bounds['flux'])+p0s[i]
+                else:
+                    pbounds[pnames[i]] = np.array(bounds['centroid'])+p0s[i]
+                    if pbounds[pnames[i]][0]<0:
+                        pbounds[pnames[i]][0] = 0
+                        
+        else:
+            pbounds = bounds    
+
+        if fit_bkg:
+            assert 'bkg' in bounds.keys(),"Must supply bounds for bkg"
+            pnames = np.append(pnames,['bkg'])
+            pbounds['bkg'] = bounds['bkg']
+
+
+        self.nest_psf(pnames,pbounds,cutouts,cutout_errs,all_xf,all_yf,
+                        psf_width=fit_width,npoints=npoints,use_MLE=use_MLE,maxiter=maxiter)
+
+        if fit_centroid:
+            result_cal = {'ra':[],'ra_err':[],'dec':[],'dec_err':[],'x':[],'x_err':[],
+                      'y':[],'y_err':[],'mjd':[],
+                      'flux':[],'fluxerr':[],'filter':[],
+                      'zp':[],'mag':[],'magerr':[],'zpsys':[],'exp':[]}
+        else:
+            result_cal = {'ra':[],'dec':[],'x':[],
+                      'y':[],'mjd':[],
+                      'flux':[],'fluxerr':[],'filter':[],
+                      'zp':[],'mag':[],'magerr':[],'zpsys':[],'exp':[]}
+        model_psf = None
+        psf_pams = []
+        i = 0
+        flux_var = 'flux'
+        if fit_centroid:
+            x = self.psf_result.best[self.psf_result.vparam_names.index('x%i'%i)]
+            y = self.psf_result.best[self.psf_result.vparam_names.index('y%i'%i)]
+            xerr = self.psf_result.errors['x%i'%i]
+            yerr = self.psf_result.errors['y%i'%i]
+            sc = astropy.wcs.utils.pixel_to_skycoord(y,x,self.wcs)
+            ra = sc.ra.value
+            dec = sc.dec.value
+            sc2 = astropy.wcs.utils.pixel_to_skycoord(y+yerr,x+xerr,self.wcs)
+            raerr = np.abs(sc2.ra.value-ra)
+            decerr = np.abs(sc2.dec.value-dec)
+        else:
+            x = self.psf_model_list[i].x_0
+            y = self.psf_model_list[i].y_0
+            sc = astropy.wcs.utils.pixel_to_skycoord(y,x,self.wcs)
+            ra = sc.ra.value
+            dec = sc.dec.value
+
+
+        if 'bkg' in self.psf_result.vparam_names:
+            bk_std = self.psf_result.errors['bkg']
+        else:
+            bk_std = 0
+        
+        yf, xf = np.mgrid[0:self.data.shape[0],0:self.data.shape[1]].astype(int)
+
+        psf_arr = self.psf_model_list[i](yf,xf)#*self.pams[i]#self.psf_pams[i]
+
+        flux_sum = np.sum(psf_arr)#simple_aperture_sum(psf_arr,np.atleast_2d([y,x]),10)
+
+        if self.telescope == 'JWST':
+            #psf_corr,model_psf = calc_jwst_psf_corr(self.psf_model_list[i].shape[0]/2,self.instrument,self.filter,self.wcs_list[i],psf=model_psf)
+            psf_corr = 1
+            flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(flux_sum*psf_corr,
+                np.sqrt(((self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
+                flux_sum*psf_corr)**2+bk_std**2),self.wcs)
+        else:
+            psf_corr = 1#calc_hst_psf_corr(self.psf_model_list[i].shape[0]/2,self.detector,self.filter,[x,y],'/Users/jpierel/DataBase/HST/psfs')
+
+            flux,fluxerr,mag,magerr,zp = calibrate_HST_flux(flux_sum*psf_corr,
+                np.sqrt(((self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
+                flux_sum*psf_corr)**2+bk_std**2),self.prim_header,self.sci_header)
+
+        result_cal['x'].append(x)
+        result_cal['y'].append(y)
+        try:
+            result_cal['mjd'].append(self.prim_header['MJD-AVG'])
+        except:
+            result_cal['mjd'].append(self.prim_header['EXPSTART'])
+            
+        result_cal['flux'].append(flux)
+        result_cal['fluxerr'].append(fluxerr)
+        result_cal['filter'].append(self.filter)
+        result_cal['zp'].append(zp)
+        result_cal['mag'].append(mag)
+        result_cal['magerr'].append(magerr)
+        result_cal['zpsys'].append('ab')
+        result_cal['exp'].append(os.path.basename(self.fname))
+        if fit_centroid:
+            result_cal['ra_err'].append(raerr)
+            result_cal['dec_err'].append(decerr)
+            result_cal['x_err'].append(xerr)
+            result_cal['y_err'].append(yerr)
+        result_cal['ra'].append(ra)
+        result_cal['dec'].append(dec)
+        
+
+        self.psf_result.phot_cal_table = astropy.table.Table(result_cal)
+    
+
+    # print('Finished PSF psf_photometry with median residuals of %.2f'%\
+    #     (100*np.median([np.sum(self.psf_result.resid_arr[i])/\
+    #         np.sum(self.psf_result.data_arr[i]) for i in range(self.n_exposures)]))+'%')
     def aperture_photometry(self,sky_location,xy_positions=None,
                 radius=None,encircled_energy=None,skyan_in=None,skyan_out=None):
         """
@@ -99,7 +648,7 @@ class observation3():
                 skyan_out = radius*4
 
         sky = {'sky_in':skyan_in,'sky_out':skyan_out}
-        phot = generic_aperture_phot(self.data,positions,radius,sky,#error=self.err,
+        phot = generic_aperture_phot(self.data,positions,radius,sky,error=self.err,
                                             epadu=epadu)
         for k in phot.keys():
             if k in result.keys():
@@ -144,7 +693,7 @@ class observation3():
         return self.aperture_result
 
 
-class observation():
+class observation2(observation):
     """
     st_phot class for level 2 (individual exposures, cals, flts) data
     """
@@ -475,7 +1024,12 @@ class observation():
                 cutout = self.data_arr_pam[im][xf, yf]
                 #plt.imshow(cutout)
                 #plt.show()
-            cutout[cutout<minVal] = 0
+
+            if np.any(cutout<0):
+                print(self.exposure_fnames[im])
+                sys.exit()
+                continue
+            
 
             centers.append([xi,yi])
 
@@ -484,6 +1038,8 @@ class observation():
             err = self.err_arr[im][xf, yf]
             err[np.isnan(err)] = np.nanmax(err)
             err[err<=0] = np.max(err)
+            err[cutout<minVal] = np.max(err)
+            cutout[cutout<minVal] = 0
 
             cutouts.append(cutout-all_bg_est[im])
             cutout_errs.append(err)
@@ -592,13 +1148,15 @@ class observation():
             if fit_centroid=='wcs':
                 ra = self.psf_result.best[self.psf_result.vparam_names.index('ra')]
                 dec = self.psf_result.best[self.psf_result.vparam_names.index('dec')]
-                ra_err = self.psf_result.errors['ra']
-                dec_err = self.psf_result.errors['dec']
+                raerr = self.psf_result.errors['ra']
+                decerr = self.psf_result.errors['dec']
                 sky_location = astropy.coordinates.SkyCoord(ra,
                                                             dec,
                                                             unit=astropy.units.deg)
                 y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs_list[i])
-                raise RuntimeError('Need to implement xy errors from wcs')
+                #raise RuntimeError('Need to implement xy errors from wcs')
+                xerr = 0
+                yerr = 0
             elif fit_centroid=='pixel':
                 x = self.psf_result.best[self.psf_result.vparam_names.index('x%i'%i)]
                 y = self.psf_result.best[self.psf_result.vparam_names.index('y%i'%i)]
@@ -727,297 +1285,9 @@ class observation():
         return [self.exposure_fnames[i].replace('.fits','_resid.fits') for i in range(self.n_exposures)]
 
 
-    def nest_psf(self,vparam_names, bounds,fluxes, fluxerrs,xs,ys,psf_width=7,use_MLE=False,
-                       minsnr=0., priors=None, ppfs=None, npoints=100, method='single',
-                       maxiter=None, maxcall=None, modelcov=False, rstate=None,
-                       verbose=False, warn=True, **kwargs):
+     
 
-        # Taken from SNCosmo nest_lc
-        # experimental parameters
-        tied = kwargs.get("tied", None)
-
-        
-
-        vparam_names = list(vparam_names)
-        if ppfs is None:
-            ppfs = {}
-        if tied is None:
-            tied = {}
-        
-        # Convert bounds/priors combinations into ppfs
-        if bounds is not None:
-            for key, val in bounds.items():
-                if key in ppfs:
-                    continue  # ppfs take priority over bounds/priors
-                a, b = val
-                if priors is not None and key in priors:
-                    # solve ppf at discrete points and return interpolating
-                    # function
-                    x_samples = np.linspace(0., 1., 101)
-                    ppf_samples = sncosmo.utils.ppf(priors[key], x_samples, a, b)
-                    f = sncosmo.utils.Interp1D(0., 1., ppf_samples)
-                else:
-                    f = sncosmo.utils.Interp1D(0., 1., np.array([a, b]))
-                ppfs[key] = f
-
-        # NOTE: It is important that iparam_names is in the same order
-        # every time, otherwise results will not be reproducible, even
-        # with same random seed.  This is because iparam_names[i] is
-        # matched to u[i] below and u will be in a reproducible order,
-        # so iparam_names must also be.
-
-        iparam_names = [key for key in vparam_names if key in ppfs]
-
-        ppflist = [ppfs[key] for key in iparam_names]
-        npdim = len(iparam_names)  # length of u
-        ndim = len(vparam_names)  # length of v
-
-        # Check that all param_names either have a direct prior or are tied.
-        for name in vparam_names:
-            if name in iparam_names:
-                continue
-            if name in tied:
-                continue
-            raise ValueError("Must supply ppf or bounds or tied for parameter '{}'"
-                             .format(name))
-
-        def prior_transform(u):
-            d = {}
-            for i in range(npdim):
-                d[iparam_names[i]] = ppflist[i](u[i])
-            v = np.empty(ndim, dtype=np.float)
-            for i in range(ndim):
-                key = vparam_names[i]
-                if key in d:
-                    v[i] = d[key]
-                else:
-                    v[i] = tied[key](d)
-            return v
-        
-        pos_start = [i for i in range(len(vparam_names))]
-        
-        if len([x for x in vparam_names if 'flux' in x])>1:
-            multi_flux = True
-        else:
-            multi_flux = False
-
-        if np.any(['dec' in x for x in vparam_names]):
-            fit_radec = True
-        else:
-            fit_radec = False
-        if np.any(['y' in x for x in vparam_names]):
-            fit_pixel = True
-        else:
-            fit_pixel = False
-
-        if np.any(['bkg' in x for x in vparam_names]):
-            fit_bkg = True
-        else:
-            fit_bkg = False
-
-        import matplotlib.pyplot as plt
-        
-        sums = [np.sum(f) for f in fluxes]
-
-        def chisq_likelihood(parameters):
-            total = 0
-            for i in range(len(fluxes)):
-                posx = xs[i]
-                posy = ys[i]
-                
-                if multi_flux:
-                    self.psf_model_list[i].flux = parameters[vparam_names.index('flux%i'%i)]
-                else:
-                    self.psf_model_list[i].flux = parameters[vparam_names.index('flux')]
-
-                if fit_radec:
-                    sky_location = astropy.coordinates.SkyCoord(parameters[vparam_names.index('ra')],
-                                                                parameters[vparam_names.index('dec')],
-                                                                unit=astropy.units.deg)
-                    y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs_list[i])
-                    self.psf_model_list[i].x_0 = x
-                    self.psf_model_list[i].y_0 = y
-                elif fit_pixel:
-                    self.psf_model_list[i].x_0 = parameters[vparam_names.index('x%i'%(i))]
-                    self.psf_model_list[i].y_0 = parameters[vparam_names.index('y%i'%(i))]
-
-                #print(posx)
-                #print(posy)
-                #print(self.psf_model_list[i].flux)
-                #print(fluxes[i])
-                mflux = self.psf_model_list[i](posx,posy)
-                #print(mflux)
-                weights = mflux/np.max(mflux)
-                if fit_bkg:
-                    if multi_flux:
-                        mflux+=parameters[vparam_names.index('bkg%i'%i)]
-                    else:
-                        mflux+=parameters[vparam_names.index('bkg')]
-                #mflux*=self.pams[i][posx,posy]
-                # plt.imshow(fluxes[i])
-                # plt.show()
-                # plt.imshow(mflux)
-                # plt.show()
-                # print(np.sum(fluxes[i]),np.sum(mflux))
-                #sys.exit()
-                total+=np.sum(((fluxes[i]-mflux)/fluxerrs[i])**2)#*weights)**2)
-            return total
-        
-        
-        def loglike(parameters):
-            chisq = chisq_likelihood(parameters)
-            return(-.5*chisq)
-        
-
-        res = nestle.sample(loglike, prior_transform, ndim, npdim=npdim,
-                            npoints=npoints, method=method, maxiter=maxiter,
-                            maxcall=maxcall, rstate=rstate,
-                            callback=(nestle.print_progress if verbose else None))
-
-        vparameters, cov = nestle.mean_and_cov(res.samples, res.weights)
-
-        res = sncosmo.utils.Result(niter=res.niter,
-                                   ncall=res.ncall,
-                                   logz=res.logz,
-                                   logzerr=res.logzerr,
-                                   h=res.h,
-                                   samples=res.samples,
-                                   weights=res.weights,
-                                   logvol=res.logvol,
-                                   logl=res.logl,
-                                   errors=OrderedDict(zip(vparam_names,
-                                                          np.sqrt(np.diagonal(cov)))),
-                                   vparam_names=copy(vparam_names),
-                                   bounds=bounds,
-                                   best=vparameters,
-                                   data_arr = fluxes,
-                                   psf_arr = None,
-                                   big_psf_arr = None,
-                                   resid_arr = None,
-                                   phot_cal_table = None)
-
-        if use_MLE:
-            best_ind = res.logl.argmax()
-            for i in range(len(vparam_names)):
-                res.best[i] = res.samples[best_ind,i]
-            params = [[res.samples[best_ind, i]-res.errors[vparam_names[i]], res.samples[best_ind, i], res.samples[best_ind, i]+res.errors[vparam_names[i]]]
-                      for i in range(len(vparam_names))]
-
-        all_mflux_arr = []
-        all_resid_arr = []
-        
-        for i in range(len(fluxes)):
-            posx = xs[i]
-            posy = ys[i]
-            
-            if multi_flux:
-                self.psf_model_list[i].flux = res.best[vparam_names.index('flux%i'%i)]
-            else:
-                self.psf_model_list[i].flux = res.best[vparam_names.index('flux')]
-
-            if fit_radec:
-                sky_location = astropy.coordinates.SkyCoord(res.best[vparam_names.index('ra')],
-                                                            res.best[vparam_names.index('dec')],
-                                                            unit=astropy.units.deg)
-                y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,self.wcs_list[i])
-                self.psf_model_list[i].x_0 = x
-                self.psf_model_list[i].y_0 = y
-            elif fit_pixel:
-                self.psf_model_list[i].x_0 = res.best[vparam_names.index('x%i'%(i))]
-                self.psf_model_list[i].y_0 = res.best[vparam_names.index('y%i'%(i))]
-            
-            mflux = self.psf_model_list[i](posx,posy)
-            all_mflux_arr.append(mflux*self.pams[i][posx,posy])
-
-            if fit_bkg:
-                if multi_flux:
-                    res.data_arr[i]-=res.best[vparam_names.index('bkg%i'%i)]
-                else:
-                    res.data_arr[i]-=res.best[vparam_names.index('bkg')]
-            #mflux*=self.pams[i][posx,posy]
-            resid = res.data_arr[i]-mflux
-            all_resid_arr.append(resid)
-            
-        res.psf_arr = all_mflux_arr
-        res.resid_arr = all_resid_arr
-        self.psf_result = res
-        return 
-
-    def plot_psf_fit(self):
-        """
-        Plot the best-fit PSF model and residuals
-        """
-
-        try:
-            temp = self.psf_result.data_arr[0]
-        except:
-            print('Must fit PSF before plotting.')
-            return
-
-
-        fig,axes = plt.subplots(self.n_exposures,3,figsize=(int(2*self.n_exposures),10))
-        axes = np.atleast_2d(axes)
-        for i in range(self.n_exposures):
-            norm1 = astropy.visualization.simple_norm(self.psf_result.data_arr[i],stretch='linear')
-            axes[i][0].imshow(self.psf_result.data_arr[i],
-                norm=norm1)
-            axes[i][0].set_title('Data')
-            axes[i][1].imshow(self.psf_result.psf_arr[i],
-                norm=norm1)
-            axes[i][1].set_title('Model')
-            axes[i][2].imshow(self.psf_result.resid_arr[i],
-                norm=norm1)
-            axes[i][2].set_title('Residual')
-            for j in range(3):
-                axes[i][j].tick_params(
-                    axis='both',          # changes apply to the x-axis
-                    which='both',      # both major and minor ticks are affected
-                    bottom=False,      # ticks along the bottom edge are off
-                    left=False,         # ticks along the top edge are off
-                    labelbottom=False,
-                    labelleft=False) # labels along the bottom edge are off
-        plt.tight_layout()
-        plt.show()
-        return fig
-
-    def plot_psf_posterior(self,minweight=-np.inf):
-        """
-        Plot the posterior corner plot from nested sampling
-
-        Parameters
-        ----------
-        minweight : float
-            A minimum weight to show from the nested sampling
-            (to zoom in on posterior)
-        """
-        import corner
-        try:
-            samples = self.psf_result.samples
-        except:
-            print('Must fit PSF before plotting.')
-            return
-        weights = self.psf_result.weights
-        samples = samples[weights>minweight]
-        weights = weights[weights>minweight]
-
-        fig = corner.corner(
-            samples,
-            weights=weights,
-            labels=self.psf_result.vparam_names,
-            quantiles=(0.16, .5, 0.84),
-            bins=20,
-            color='k',
-            show_titles=True,
-            title_fmt='.2f',
-            smooth1d=False,
-            smooth=True,
-            fill_contours=True,
-            plot_contours=False,
-            plot_density=True,
-            use_mathtext=True,
-            title_kwargs={"fontsize": 11},
-            label_kwargs={'fontsize': 16})
-        plt.show()
+    
 
     def plot_phot(self,method='psf'):
         """
