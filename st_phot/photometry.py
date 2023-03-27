@@ -145,9 +145,9 @@ class observation():
                         mflux+=parameters[vparam_names.index('bkg%i'%i)]
                     else:
                         mflux+=parameters[vparam_names.index('bkg')]
-                weights = (fluxes[i]/np.max(fluxes[i]))
-                weights[weights<0] = 0
-                weights/=np.sum(weights)
+                #weights = (fluxes[i]/np.max(fluxes[i]))
+                #weights[weights<0] = 0
+                #weights/=np.sum(weights)
                 #mflux*=self.pams[i][posx,posy]
                 #plt.imshow(fluxes[i],origin='lower')
                 #plt.show()
@@ -156,7 +156,8 @@ class observation():
                 # print(np.sum(fluxes[i]),np.sum(mflux))
                 #print(weights*((fluxes[i]-mflux)**2))
                 #sys.exit()
-                total+=np.sum(((fluxes[i]-mflux)/fluxerrs[i])**2)#fluxerrs[i])**2)#*weights)**2)
+                #print(fluxes[i],mflux,fluxerrs[i])
+                total+=np.nansum(((fluxes[i]-mflux)/fluxerrs[i])**2)#fluxerrs[i])**2)#*weights)**2)
 
             #print(total)
             #sys.exit()
@@ -1045,11 +1046,11 @@ class observation2(observation):
             cutout_errs.append(err)
             
             if fit_flux!='fixed':
-                f_guess = np.sum(cutout-all_bg_est[im])
+                f_guess = np.nansum(cutout-all_bg_est[im])
                 fluxg.append(f_guess)
 
         if fit_flux=='single':
-            fluxg = [np.median(fluxg)]
+            fluxg = [np.nanmedian(fluxg)]
             pnames = ['flux']
         elif fit_flux=='multi':
             pnames = ['flux%i'%i for i in range(self.n_exposures)]
@@ -1236,8 +1237,8 @@ class observation2(observation):
         self.psf_pams = psf_pams
 
         print('Finished PSF psf_photometry with median residuals of %.2f'%\
-            (100*np.median([np.sum(self.psf_result.resid_arr[i])/\
-                np.sum(self.psf_result.data_arr[i]) for i in range(self.n_exposures)]))+'%')
+            (100*np.nanmedian([np.nansum(self.psf_result.resid_arr[i])/\
+                np.nansum(self.psf_result.data_arr[i]) for i in range(self.n_exposures)]))+'%')
             #(100*np.median([np.median(self.psf_result.resid_arr[i]/\
             #    self.psf_result.data_arr[i]) for i in range(self.n_exposures)]))+'%')
 
