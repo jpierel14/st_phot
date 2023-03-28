@@ -34,7 +34,30 @@ from jwst.associations.lib.rules_level3_base import DMS_Level3_Base
 from .wfc3_photometry.psf_tools.PSFUtils import make_models
 from .wfc3_photometry.psf_tools.PSFPhot import get_standard_psf
 
-__all__ = ['get_jwst_psf','get_hst_psf','get_jwst3_psf']
+__all__ = ['get_jwst_psf','get_hst_psf','get_jwst3_psf','get_jwst_psf_grid',
+            'get_jwst_psf_from_grid']
+
+def get_jwst_psf_grid(st_obs,num_psfs=16):
+    inst = webbpsf.instrument(st_obs.instrument)
+    inst.filter = st_obs.filter
+    inst.detector=st_obs.detector
+
+    grid = inst.psf_grid(num_psfs=num_psfs,all_detectors=False)
+    return grid
+
+def get_jwst_psf_from_grid(st_obs,sky_location,grid,psf_width=101):
+    psf_list = []
+    for i in range(st_obs.n_exposures):
+        imwcs = st_obs.wcs_list[i]
+        x,y = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
+        grid.x_0 = x
+        grid.y_0 = y
+        yg, xg = np.mgrid[-1*(psf_width-1)/2:(psf_width+1)/2,-1*(psf_width-1)/2:(psf_width+1)/2].astype(int)
+        yf, xf = yg+int(y+.5), xg+int(x+.5)
+        psf = np.array(grid(xf,yf)).astype(float)
+        epsf_model = EPSFModel(psf)
+        psf_list.append(epsf_model)
+    return psf_list
 
 def get_jwst_psf(st_obs,sky_location,num_psfs=16,psf_width=101):
     inst = webbpsf.instrument(st_obs.instrument)

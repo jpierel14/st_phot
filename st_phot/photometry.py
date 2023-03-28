@@ -1026,7 +1026,6 @@ class observation2(observation):
                 #plt.imshow(cutout)
                 #plt.show()
             
-
             centers.append([xi,yi])
 
             all_xf.append(xf)
