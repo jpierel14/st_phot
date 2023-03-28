@@ -1025,11 +1025,6 @@ class observation2(observation):
                 cutout = self.data_arr_pam[im][xf, yf]
                 #plt.imshow(cutout)
                 #plt.show()
-
-            if np.any(cutout<0):
-                print(self.exposure_fnames[im])
-                sys.exit()
-                continue
             
 
             centers.append([xi,yi])
