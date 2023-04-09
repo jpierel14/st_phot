@@ -37,6 +37,22 @@ from .wfc3_photometry.psf_tools.PSFPhot import get_standard_psf
 __all__ = ['get_jwst_psf','get_hst_psf','get_jwst3_psf','get_jwst_psf_grid',
             'get_jwst_psf_from_grid']
 
+def filter_dict_from_list(filelist,sky_location=None):
+    filt_dict = {}
+    for f in filelist:
+        dat = astropy.io.fits.open(f)
+        if sky_location is not None:
+            imwcs = astropy.wcs.WCS(dat['SCI',1],dat)
+            y,x = skycoord_to_pixel(sky_location,imwcs)
+            if not (0<x<dat['SCI',1].data.shape[1] and 0<y<dat['SCI',1].data.shape[0]):
+                continue
+
+        filt = dat[0].header['FILTER']
+        if filt not in filt_dict.keys():
+            filt_dict[filt] = []
+        filt_dict[filt].append(f)
+    return filt_dict
+
 def get_jwst_psf_grid(st_obs,num_psfs=16):
     inst = webbpsf.instrument(st_obs.instrument)
     inst.filter = st_obs.filter
@@ -136,6 +152,39 @@ def get_hst_psf(st_obs,sky_location,psf_width=101):
         psf_list.append(epsf_model)
     return psf_list
 
+def get_hst3_psf(st_obs,sky_location,psf_width=101):
+    from drizzlepac import astrodrizzle
+    psfs = get_hst_psf(st_obs,sky_location,psf_width=psf_width)
+
+    outdir = os.path.join(os.path.abspath(os.path.dirname(__file__)),'temp_%i'%np.random.randint(0,1000))
+    os.mkdir(outdir)
+    try:
+        out_fnames = []
+        for i,f in enumerate(st_obs.exposure_fnames):
+            dat = fits.open(f)
+            imwcs = wcs.WCS(dat['SCI',1],dat)
+            y,x = skycoord_to_pixel(sky_location,imwcs)
+            yf, xf = np.mgrid[0:dat['SCI',1].data.shape[0],0:dat['SCI',1].data.shape[1]].astype(int)
+            psfs[i].x_0 = x
+            psfs[i].y_0 = y
+            dat['SCI',1].data = psfs[i](yf,xf)
+            dat.writeto(os.path.join(outdir,os.path.basename(f)),overwrite=True)
+            out_fnames.append(os.path.join(outdir,os.path.basename(f)))
+            
+        
+
+        astrodrizzle.AstroDrizzle(','.join(out_fnames),clean=True,output=os.path.join(outdir,'temp_psf'))
+        
+        dat = fits.open(glob.glob(os.path.join(outdir,'temp_psf*sci.fits'))[0])
+        imwcs = wcs.WCS(dat[0])
+        y,x = skycoord_to_pixel(sky_location,imwcs)
+        psf3 = extract_array(dat[0].data,(psf_width,psf_width),(x,y))
+        epsf3 = EPSFModel(psf3)
+        shutil.rmtree(outdir)
+    except:
+        print('Failed to create PSF model')
+        shutil.rmtree(outdir)
+    return epsf3
 def jwst_apcorr(fname,ee=70):
     sc = source_catalog.source_catalog_step.SourceCatalogStep()
     with datamodels.open(fname) as model:
@@ -194,7 +243,6 @@ def generic_aperture_phot(data,positions,radius,sky,epadu=1,error=None):
     phot['aper_bkg'] = bkg_median * aperture.area
     phot['aper_sum_bkgsub'] = phot['aperture_sum'] - phot['aper_bkg']
     if error is None:
-        print('huh')
         error_poisson = np.sqrt(phot['aper_sum_bkgsub'])
         error_scatter_sky = aperture.area * bkg_stdev**2
         error_mean_sky = bkg_stdev**2 * aperture.area**2 / annulus_aperture.area

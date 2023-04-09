@@ -329,11 +329,16 @@ class observation3(observation):
         self.fits = astropy.io.fits.open(self.fname)
         self.data = self.fits['SCI',1].data
         try:
-            self.err = 1./np.sqrt(self.fits['WHT',1].data)
+            print('yes err')
+            self.err = self.fits['ERR',1].data
         except:
-            self.err = None
+            try:
+                self.err = 1./np.sqrt(self.fits['WHT',1].data)
+            except:
+                self.err = None
         self.prim_header = self.fits[0].header
         self.sci_header = self.fits['SCI',1].header
+
         self.wcs = astropy.wcs.WCS(self.sci_header)
         self.pams = [np.ones(self.data.shape)]
         self.n_exposures = 1
@@ -350,7 +355,16 @@ class observation3(observation):
         except:
             self.telescope = 'JWST'
             self.instrument = 'NIRCam'
-
+        try:
+            self.detector = self.prim_header['DETECTOR']
+            self.detector = self.detector.replace('LONG','5')
+            self.detector = self.detector[:5]
+        except:
+            self.detector = None
+        if self.telescope=='JWST':
+            self.epadu = self.sci_header['XPOSURE']*self.sci_header['PHOTMJSR']
+        else:
+            raise RuntimeError('do this for HST')
 
     def psf_photometry(self,psf_model,sky_location=None,xy_position=None,fit_width=None,background=None,
                         fit_flux=True,fit_centroid=True,fit_bkg=False,bounds={},npoints=100,use_MLE=False,
@@ -466,7 +480,10 @@ class observation3(observation):
         cutout -= all_bg_est
         cutouts.append(cutout)
         if fit_flux:
-            f_guess = [np.sum(cutout)]
+            if all_bg_est!=0:
+                f_guess = [np.nansum(cutout)]
+            else:
+                f_guess = [np.nansum(cutout-np.nanmedian(self.data))]
             pnames = ['flux']
         else:
             f_guess = []
@@ -534,25 +551,28 @@ class observation3(observation):
             raerr = np.abs(sc2.ra.value-ra)
             decerr = np.abs(sc2.dec.value-dec)
         else:
-            x = self.psf_model_list[i].x_0
-            y = self.psf_model_list[i].y_0
+            x = float(self.psf_model_list[i].x_0.value)
+            y = float(self.psf_model_list[i].y_0.value)
             sc = astropy.wcs.utils.pixel_to_skycoord(y,x,self.wcs)
             ra = sc.ra.value
             dec = sc.dec.value
 
 
-        if 'bkg' in self.psf_result.vparam_names:
-            bk_std = self.psf_result.errors['bkg']
-        else:
-            bk_std = 0
+        #if 'bkg' in self.psf_result.vparam_names:
+        #    bk_std = np.sqrt(self.psf_result.best[self.psf_result.vparam_names.index('bkg')]/self.epadu)
+        #elif background is not None:
+        #    bk_std = np.sqrt(background/self.epadu)
+        #else:
+        bk_std = 0
         
         yf, xf = np.mgrid[0:self.data.shape[0],0:self.data.shape[1]].astype(int)
 
         psf_arr = self.psf_model_list[i](yf,xf)#*self.pams[i]#self.psf_pams[i]
 
         flux_sum = np.sum(psf_arr)#simple_aperture_sum(psf_arr,np.atleast_2d([y,x]),10)
-
         if self.telescope == 'JWST':
+            print((self.psf_result.errors[flux_var]/self.psf_result.best[self.psf_result.vparam_names.index(flux_var)])*\
+                flux_sum,bk_std)
             #psf_corr,model_psf = calc_jwst_psf_corr(self.psf_model_list[i].shape[0]/2,self.instrument,self.filter,self.wcs_list[i],psf=model_psf)
             psf_corr = 1
             flux,fluxerr,mag,magerr,zp = calibrate_JWST_flux(flux_sum*psf_corr,
@@ -693,6 +713,67 @@ class observation3(observation):
         self.aperture_result = res
         return self.aperture_result
 
+    def plant_psf(self,psf_model,plant_locations,magnitudes):
+        """
+        PSF planting class. Output files will be the same directory
+        as the data files, but with _plant.fits added the end. 
+
+        Parameters
+        ----------
+        psf_model : :class:`~photutils.psf.EPSFModel`
+            In reality this does not need to be an EPSFModel, but just any
+            photutils psf model class.
+        plant_locations : list
+            The location(s) to plant the psf
+        magnitudes:
+            The magnitudes to plant your psf (matching length of plant_locations)
+        """
+
+        if not isinstance(plant_locations,(list,np.ndarray)):
+            plant_locations = [plant_locations]
+        if isinstance(magnitudes,(int,float)):
+            magnitudes = [magnitudes]*len(plant_locations)
+        if not isinstance(psf_model,list):
+            psf_model = [psf_model]*len(psf_model)
+        assert len(psf_model)==len(plant_locations)==len(magnitudes), "Must supply same number of psfs,plant_locations,mags"
+        #psf_corr,mod_psf = calc_jwst_psf_corr(psf_model.data.shape[0]/2,self.instrument,
+        #    self.filter,self.wcs_list[0])
+        
+        plant_info = {key:[] for key in ['x','y','ra','dec','mag','flux']}
+        temp = astropy.io.fits.open(self.fname)
+        for j in range(len(plant_locations)):
+            if isinstance(plant_locations[j],astropy.coordinates.SkyCoord):
+                y,x = astropy.wcs.utils.skycoord_to_pixel(plant_locations[j],self.wcs)
+                ra = plant_locations[j].ra.value
+                dec = plant_locations[j].dec.value
+            else:
+                x,y = plant_locations[j]
+                sc = astropy.wcs.utils.pixel_to_skycoord(x,y,self.wcs)
+                ra = sc.ra.value
+                dec = sc.dec.value
+
+            flux = JWST_mag_to_flux(magnitudes[j],self.wcs)
+            psf_model[j].x_0 = x
+            psf_model[j].y_0 = y
+            psf_model[j].flux = flux/np.sum(psf_model[j].data)#/psf_corr
+         
+            #psf_arr = flux*psf_model.data/astropy.nddata.extract_array(\
+            #    self.pams[i],psf_model.data.shape,[x,y])
+            yf, xf = np.mgrid[0:temp['SCI',1].data.shape[0],0:temp['SCI',1].data.shape[1]].astype(int)
+            psf_arr = psf_model[j](yf,xf)
+            plant_info['x'].append(x)
+            plant_info['y'].append(y)
+            plant_info['ra'].append(ra)
+            plant_info['dec'].append(dec)
+            plant_info['mag'].append(magnitudes[j])
+            plant_info['flux'].append(np.sum(psf_arr))
+            
+
+            temp['SCI',1].data+=psf_arr# = astropy.nddata.add_array(temp['SCI',1].data,
+                #psf_arr,[x,y])
+        astropy.table.Table(plant_info).write(self.fname.replace('.fits','_plant.dat'),overwrite=True,
+                                              format='ascii')
+        temp.writeto(self.fname.replace('.fits','_plant.fits'),overwrite=True)
 
 class observation2(observation):
     """
@@ -1040,7 +1121,10 @@ class observation2(observation):
             cutout_errs.append(err)
             
             if fit_flux!='fixed':
-                f_guess = np.nansum(cutout-all_bg_est[im])
+                if all_bg_est[im]!=0:
+                    f_guess = np.nansum(cutout-all_bg_est[im])
+                else:
+                    f_guess = np.nansum(cutout-np.nanmedian(self.data_arr_pam[im]))
                 fluxg.append(f_guess)
 
         if fit_flux=='single':
