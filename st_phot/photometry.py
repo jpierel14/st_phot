@@ -328,9 +328,9 @@ class observation3(observation):
         self.fname = fname
         self.fits = astropy.io.fits.open(self.fname)
         self.data = self.fits['SCI',1].data
-        try:
-            print('yes err')
+        try:            
             self.err = self.fits['ERR',1].data
+            print('yes err')
         except:
             try:
                 self.err = 1./np.sqrt(self.fits['WHT',1].data)
@@ -361,10 +361,10 @@ class observation3(observation):
             self.detector = self.detector[:5]
         except:
             self.detector = None
-        if self.telescope=='JWST':
-            self.epadu = self.sci_header['XPOSURE']*self.sci_header['PHOTMJSR']
-        else:
-            raise RuntimeError('do this for HST')
+        #if self.telescope=='JWST':
+        #    self.epadu = self.sci_header['XPOSURE']*self.sci_header['PHOTMJSR']
+        #else:
+        #    raise RuntimeError('do this for HST')
 
     def psf_photometry(self,psf_model,sky_location=None,xy_position=None,fit_width=None,background=None,
                         fit_flux=True,fit_centroid=True,fit_bkg=False,bounds={},npoints=100,use_MLE=False,

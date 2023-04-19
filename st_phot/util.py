@@ -319,9 +319,8 @@ def hst_apcorr(ap,filt,inst):
     else:
         if not os.path.exists('wfc3uvis2_aper_007_syn.csv'):
             urllib.request.urlretrieve('https://www.stsci.edu/files/live/sites/www/files/home/hst/'+\
-                                   'instrumentation/wfc3/data-analysis/photometric-calibration/'+\
-                                   'uvis-encircled-energy/_documents/wfc3uvis2_aper_007_syn.csv',
-                                      'wfc3uvis2_aper_007_syn.csv')
+                                    'instrumentation/wfc3/data-analysis/photometric-calibration/'+\
+                                    'uvis-encircled-energy/_documents/wfc3uvis2_aper_007_syn.csv')
         ee = Table.read('wfc3uvis2_aper_007_syn.csv',format='ascii')
     
         ee.remove_column('FILTER')
