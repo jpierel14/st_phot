@@ -1344,9 +1344,10 @@ class observation2(observation):
             psf_width = self.psf_model_list[i].data.shape[0]
             yf, xf = np.mgrid[0:self.data_arr[i].shape[0],0:self.data_arr[i].shape[1]].astype(int)
 
-
-            psf_arr = self.psf_model_list[i](yf,xf)*self.prim_headers[i]['EXPTIME']
-            print(np.max(psf_arr))
+            if self.sci_headers[0]['BUNIT'] in ['ELECTRON','ELECTRONS']:
+                psf_arr = self.psf_model_list[i](yf,xf)*self.prim_headers[i]['EXPTIME']
+            else:
+                psf_arr = self.psf_model_list[i](yf,xf)
 
             if fname is None:
                 temp = astropy.io.fits.open(self.exposure_fnames[i])
