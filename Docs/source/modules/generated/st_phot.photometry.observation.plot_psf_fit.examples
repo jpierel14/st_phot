@@ -1,0 +1,39 @@
+
+
+Examples using ``st_phot.photometry.observation.plot_psf_fit``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. start-sphx-glr-thumbnails
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="PSF Photometry">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_a_psf_thumb.png
+    :alt: PSF Photometry
+
+  :ref:`sphx_glr_examples_plot_a_psf.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">PSF Photometry</div>
+    </div>
+
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_plot_a_psf.py`
+
+.. raw:: html
+
+    </div>
+

@@ -90,16 +90,16 @@ For this example we download HST FLT images from MAST.
 
  .. code-block:: none
 
-    INFO: Found cached file ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q3/hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits with expected size 16580160. [astroquery.query]
-    INFO: Found cached file ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q5/hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits with expected size 16580160. [astroquery.query]
-    INFO: Found cached file ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q7/hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits with expected size 16580160. [astroquery.query]
+    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HST/product/hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits to ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q3/hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits ... [Done]
+    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HST/product/hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits to ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q5/hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits ... [Done]
+    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HST/product/hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits to ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q7/hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits ... [Done]
 
 
 .. raw:: html
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=3</i>
-    <table id="table140184797651072" class="table-striped table-bordered table-condensed">
+    <table id="table140690388092336" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str99</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q3/hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -188,7 +188,7 @@ neighboring filter or build your own PSF from stars in the field.
 .. code-block:: default
 
 
-    hst_obs = st_phot.observation(files)
+    hst_obs = st_phot.observation2(files)
     psfs = st_phot.get_hst_psf(hst_obs,sn_location)
     plt.imshow(psfs[0].data)
     plt.show()
@@ -251,7 +251,7 @@ neighboring filter or build your own PSF from stars in the field.
     *
 
       .. image-sg:: /examples/images/sphx_glr_plot_a_psf_005.png
-         :alt: flux = ${6.31}_{-0.25}^{+0.24}$, x0 = ${555.67}_{-0.06}^{+0.06}$, y0 = ${561.46}_{-0.07}^{+0.06}$, x1 = ${559.36}_{-0.05}^{+0.05}$, y1 = ${564.66}_{-0.05}^{+0.04}$, x2 = ${562.42}_{-0.04}^{+0.03}$, y2 = ${567.87}_{-0.05}^{+0.04}$, bkg = ${4.50}_{-0.02}^{+0.02}$
+         :alt: flux = ${6.41}_{-0.25}^{+0.27}$, x0 = ${555.91}_{-0.07}^{+0.07}$, y0 = ${561.30}_{-0.04}^{+0.04}$, x1 = ${559.22}_{-0.06}^{+0.05}$, y1 = ${564.63}_{-0.04}^{+0.04}$, x2 = ${562.42}_{-0.03}^{+0.03}$, y2 = ${567.96}_{-0.05}^{+0.05}$, bkg = ${4.49}_{-0.02}^{+0.02}$
          :srcset: /examples/images/sphx_glr_plot_a_psf_005.png
          :class: sphx-glr-multi-img
 
@@ -260,18 +260,12 @@ neighboring filter or build your own PSF from stars in the field.
 
  .. code-block:: none
 
-    /Users/jpierel/DataBase/HST/psfs/PSFSTD_WFC3IR_F110W.fits
-    Using PSF file PSFSTD_WFC3IR_F110W.fits
-    /Users/jpierel/DataBase/HST/psfs/PSFSTD_WFC3IR_F110W.fits
-    Using PSF file PSFSTD_WFC3IR_F110W.fits
-    /Users/jpierel/DataBase/HST/psfs/PSFSTD_WFC3IR_F110W.fits
-    Using PSF file PSFSTD_WFC3IR_F110W.fits
-    Finished PSF psf_photometry with median residuals of 96.94%
+    Finished PSF psf_photometry with median residuals of 11.61%
             ra         ...                     exp                     
     ------------------ ... --------------------------------------------
-    322.41754280754316 ... hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits
-    322.41753530230494 ... hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits
-    322.41754148067974 ... hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits
+     322.4175412318918 ... hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits
+     322.4175396126845 ... hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits
+    322.41753898759896 ... hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits
 
 
 
@@ -317,7 +311,7 @@ flux across all exposures
     *
 
       .. image-sg:: /examples/images/sphx_glr_plot_a_psf_007.png
-         :alt: flux0 = ${6.73}_{-0.56}^{+0.52}$, flux1 = ${5.98}_{-0.50}^{+0.45}$, flux2 = ${6.24}_{-0.32}^{+0.36}$, x0 = ${555.67}_{-0.06}^{+0.06}$, y0 = ${561.45}_{-0.06}^{+0.05}$, x1 = ${559.36}_{-0.05}^{+0.05}$, y1 = ${564.67}_{-0.05}^{+0.05}$, x2 = ${562.42}_{-0.04}^{+0.03}$, y2 = ${567.86}_{-0.04}^{+0.05}$, bkg0 = ${4.54}_{-0.03}^{+0.03}$, bkg1 = ${4.53}_{-0.03}^{+0.03}$, bkg2 = ${4.43}_{-0.02}^{+0.03}$
+         :alt: flux0 = ${5.81}_{-0.41}^{+0.47}$, flux1 = ${6.09}_{-0.47}^{+0.53}$, flux2 = ${7.08}_{-0.41}^{+0.39}$, x0 = ${555.93}_{-0.07}^{+0.08}$, y0 = ${561.27}_{-0.05}^{+0.05}$, x1 = ${559.20}_{-0.07}^{+0.05}$, y1 = ${564.63}_{-0.04}^{+0.04}$, x2 = ${562.43}_{-0.03}^{+0.03}$, y2 = ${567.94}_{-0.05}^{+0.06}$, bkg0 = ${4.58}_{-0.03}^{+0.03}$, bkg1 = ${4.52}_{-0.03}^{+0.03}$, bkg2 = ${4.40}_{-0.03}^{+0.03}$
          :srcset: /examples/images/sphx_glr_plot_a_psf_007.png
          :class: sphx-glr-multi-img
 
@@ -326,18 +320,12 @@ flux across all exposures
 
  .. code-block:: none
 
-    /Users/jpierel/DataBase/HST/psfs/PSFSTD_WFC3IR_F110W.fits
-    Using PSF file PSFSTD_WFC3IR_F110W.fits
-    /Users/jpierel/DataBase/HST/psfs/PSFSTD_WFC3IR_F110W.fits
-    Using PSF file PSFSTD_WFC3IR_F110W.fits
-    /Users/jpierel/DataBase/HST/psfs/PSFSTD_WFC3IR_F110W.fits
-    Using PSF file PSFSTD_WFC3IR_F110W.fits
-    Finished PSF psf_photometry with median residuals of 96.17%
+    Finished PSF psf_photometry with median residuals of 5.06%
             ra         ...                     exp                     
     ------------------ ... --------------------------------------------
-     322.4175429447371 ... hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits
-    322.41753521623707 ... hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits
-     322.4175415929031 ... hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits
+    322.41754134803966 ... hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits
+     322.4175399846277 ... hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits
+    322.41753906223477 ... hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits
 
 
 
@@ -380,16 +368,16 @@ st_phot can handle as many as are needed (given time).
  .. code-block:: none
 
     INFO: Found cached file ./mastDownload/JWST/jw02767002001_02103_00001_nrcb3/jw02767002001_02103_00001_nrcb3_cal.fits with expected size 117538560. [astroquery.query]
-    INFO: Found cached file ./mastDownload/JWST/jw02767002001_02103_00002_nrcb3/jw02767002001_02103_00002_nrcb3_cal.fits with expected size 117538560. [astroquery.query]
-    INFO: Found cached file ./mastDownload/JWST/jw02767002001_02103_00003_nrcb3/jw02767002001_02103_00003_nrcb3_cal.fits with expected size 117538560. [astroquery.query]
-    INFO: Found cached file ./mastDownload/JWST/jw02767002001_02103_00004_nrcb3/jw02767002001_02103_00004_nrcb3_cal.fits with expected size 117538560. [astroquery.query]
+    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:JWST/product/jw02767002001_02103_00002_nrcb3_cal.fits to ./mastDownload/JWST/jw02767002001_02103_00002_nrcb3/jw02767002001_02103_00002_nrcb3_cal.fits ... [Done]
+    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:JWST/product/jw02767002001_02103_00003_nrcb3_cal.fits to ./mastDownload/JWST/jw02767002001_02103_00003_nrcb3/jw02767002001_02103_00003_nrcb3_cal.fits ... [Done]
+    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:JWST/product/jw02767002001_02103_00004_nrcb3_cal.fits to ./mastDownload/JWST/jw02767002001_02103_00004_nrcb3/jw02767002001_02103_00004_nrcb3_cal.fits ... [Done]
 
 
 .. raw:: html
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=4</i>
-    <table id="table140186405858048" class="table-striped table-bordered table-condensed">
+    <table id="table140689853648080" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str92</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/JWST/jw02767002001_02103_00001_nrcb3/jw02767002001_02103_00001_nrcb3_cal.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -467,11 +455,11 @@ st_phot can handle as many as are needed (given time).
 
  .. code-block:: none
 
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
     Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
     Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
       warnings.warn(
@@ -495,7 +483,7 @@ for testing purposes.
 .. code-block:: default
 
 
-    jwst_obs = st_phot.observation(files)
+    jwst_obs = st_phot.observation2(files)
     psfs = st_phot.get_jwst_psf(jwst_obs,sn_location,num_psfs=4)
     plt.imshow(psfs[0].data)
     plt.show()
@@ -513,37 +501,37 @@ for testing purposes.
 
  .. code-block:: none
 
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
     Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
     Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:41:33.343' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:41:33.343' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:46:55.446' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:52:17.549' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.971719 from OBSGEO-[XYZ].
-    Set OBSGEO-B to    20.560575 from OBSGEO-[XYZ].
-    Set OBSGEO-H to 1233361140.633 from OBSGEO-[XYZ]'.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.973145 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.561198 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233361578.113 from OBSGEO-[XYZ]'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:29:33.983' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:29:33.983' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:34:56.086' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:40:18.189' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.953256 from OBSGEO-[XYZ].
-    Set OBSGEO-B to    20.552251 from OBSGEO-[XYZ].
-    Set OBSGEO-H to 1233356657.959 from OBSGEO-[XYZ]'.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.954699 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.552882 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233357096.537 from OBSGEO-[XYZ]'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:52:49.758' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:52:49.758' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:58:11.861' from MJD-AVG.
     Set DATE-END to '2022-10-06T11:03:33.964' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.990184 from OBSGEO-[XYZ].
-    Set OBSGEO-B to    20.568897 from OBSGEO-[XYZ].
-    Set OBSGEO-H to 1233365657.613 from OBSGEO-[XYZ]'.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.990493 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.569016 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233365823.364 from OBSGEO-[XYZ]'.
       warnings.warn(
 
     Running instrument: NIRCam, filter: F150W
@@ -569,7 +557,7 @@ for testing purposes.
 
 .. code-block:: default
 
-    jwst_obs.psf_photometry(psfs,sn_location,bounds={'flux':[-3000,100],
+    jwst_obs.psf_photometry(psfs,sn_location,bounds={'flux':[-1000,1000],
                             'centroid':[-2,2],
                             'bkg':[0,50]},
                             fit_width=5,
@@ -599,7 +587,7 @@ for testing purposes.
     *
 
       .. image-sg:: /examples/images/sphx_glr_plot_a_psf_012.png
-         :alt: flux = ${22.50}_{-0.19}^{+0.18}$, x0 = ${904.23}_{-0.01}^{+0.01}$, y0 = ${1280.94}_{-0.01}^{+0.01}$, x1 = ${1098.29}_{-0.01}^{+0.01}$, y1 = ${1274.04}_{-0.01}^{+0.02}$, x2 = ${905.29}_{-0.01}^{+0.01}$, y2 = ${1281.93}_{-0.01}^{+0.01}$, x3 = ${1099.29}_{-0.01}^{+0.01}$, y3 = ${1273.97}_{-0.01}^{+0.01}$, bkg = ${1.21}_{-0.01}^{+0.01}$
+         :alt: flux = ${427.16}_{-3.59}^{+3.48}$, x0 = ${904.03}_{-0.01}^{+0.01}$, y0 = ${1281.30}_{-0.01}^{+0.01}$, x1 = ${1098.14}_{-0.01}^{+0.01}$, y1 = ${1273.75}_{-0.01}^{+0.01}$, x2 = ${905.48}_{-0.01}^{+0.01}$, y2 = ${1281.93}_{-0.01}^{+0.01}$, x3 = ${1099.53}_{-0.01}^{+0.01}$, y3 = ${1274.06}_{-0.01}^{+0.01}$, bkg = ${1.21}_{-0.01}^{+0.01}$
          :srcset: /examples/images/sphx_glr_plot_a_psf_012.png
          :class: sphx-glr-multi-img
 
@@ -608,13 +596,335 @@ for testing purposes.
 
  .. code-block:: none
 
-    Finished PSF psf_photometry with median residuals of 1.00%
+    Finished PSF psf_photometry with median residuals of 1.46%
             ra         ...                   exp                   
     ------------------ ... ----------------------------------------
-     322.4175415311485 ... jw02767002001_02103_00001_nrcb3_cal.fits
-      322.417539897902 ... jw02767002001_02103_00003_nrcb3_cal.fits
-    322.41753729360585 ... jw02767002001_02103_00002_nrcb3_cal.fits
-     322.4175362488882 ... jw02767002001_02103_00004_nrcb3_cal.fits
+     322.4175394403992 ... jw02767002001_02103_00001_nrcb3_cal.fits
+    322.41753898191234 ... jw02767002001_02103_00003_nrcb3_cal.fits
+    322.41753890893585 ... jw02767002001_02103_00002_nrcb3_cal.fits
+     322.4175381891402 ... jw02767002001_02103_00004_nrcb3_cal.fits
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 212-227
+
+-----------
+Level 3 PSF
+-----------
+
+While it's generally recommended to perform PSF photometry on data
+with level 2 processing (i.e., before drizzling), sometimes low
+S/N means it's desirable to perform PSF photometry on level 3 data.
+While (usually) not quite as accurate, here is a function to do
+this. 
+
+**Download some Data**
+
+For this example we download JWST cal images from MAST. We just use
+4 of the 8 dithered exposures  for speed here, but in principle
+st_phot can handle as many as are needed (given time).
+
+.. GENERATED FROM PYTHON SOURCE LINES 228-234
+
+.. code-block:: default
+
+    obs_table = Observations.query_criteria(obs_id='jw02767-o002_t001_nircam_clear-f150w')
+    data_products_by_obs = Observations.get_product_list(obs_table)
+    data_products_by_obs = data_products_by_obs[data_products_by_obs['calib_level']==3]
+    data_products_by_obs = data_products_by_obs[data_products_by_obs['productSubGroupDescription']=='I2D']
+    Observations.download_products(data_products_by_obs[0],extension='fits')
+
+
+
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:JWST/product/jw02767-o002_t001_nircam_clear-f150w_i2d.fits to ./mastDownload/JWST/jw02767-o002_t001_nircam_clear-f150w/jw02767-o002_t001_nircam_clear-f150w_i2d.fits ... [Done]
+
+
+.. raw:: html
+
+    <div class="output_subarea output_html rendered_html output_result">
+    <div><i>Table length=1</i>
+    <table id="table140689854525024" class="table-striped table-bordered table-condensed">
+    <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
+    <thead><tr><th>str102</th><th>str8</th><th>object</th><th>object</th></tr></thead>
+    <tr><td>./mastDownload/JWST/jw02767-o002_t001_nircam_clear-f150w/jw02767-o002_t001_nircam_clear-f150w_i2d.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
+    </table></div>
+    </div>
+    <br />
+    <br />
+
+.. GENERATED FROM PYTHON SOURCE LINES 235-237
+
+**Examine the Image**
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 237-249
+
+.. code-block:: default
+
+
+    files = glob.glob('mastDownload/JWST/*/*i2d.fits')
+    ref_image = files[0]
+    ref_fits = fits.open(ref_image)
+    ref_data = fits.open(ref_image)['SCI',1].data
+    norm1 = simple_norm(ref_data,stretch='linear',min_cut=-1,max_cut=10)
+
+    plt.imshow(ref_data, origin='lower',
+                          norm=norm1,cmap='gray')
+    plt.gca().tick_params(labelcolor='none',axis='both',color='none')
+    plt.show()
+
+
+
+
+.. image-sg:: /examples/images/sphx_glr_plot_a_psf_013.png
+   :alt: plot a psf
+   :srcset: /examples/images/sphx_glr_plot_a_psf_013.png
+   :class: sphx-glr-single-img
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 250-252
+
+**Zoom in to see the Supernova**
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 252-263
+
+.. code-block:: default
+
+
+    sn_location = SkyCoord('21:29:40.2103','+0:05:24.158',unit=(u.hourangle,u.deg))
+    ref_y,ref_x = skycoord_to_pixel(sn_location,wcs.WCS(ref_fits['SCI',1],ref_fits))
+    ref_cutout = extract_array(ref_data,(11,11),(ref_x,ref_y))
+    norm1 = simple_norm(ref_cutout,stretch='linear',min_cut=-1,max_cut=10)
+    plt.imshow(ref_cutout, origin='lower',
+                          norm=norm1,cmap='gray')
+    plt.title('SN2022riv (level 3)')
+    plt.gca().tick_params(labelcolor='none',axis='both',color='none')
+    plt.show()
+
+
+
+
+.. image-sg:: /examples/images/sphx_glr_plot_a_psf_014.png
+   :alt: SN2022riv (level 3)
+   :srcset: /examples/images/sphx_glr_plot_a_psf_014.png
+   :class: sphx-glr-single-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T11:04:11.545' from MJD-AVG.
+    Set DATE-END to '2022-10-06T11:50:05.577' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.954699 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.552882 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233357096.537 from OBSGEO-[XYZ]'.
+      warnings.warn(
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 264-271
+
+**Get the PSF model**
+
+(note the use of "3" instead of "2" everywhere). And note that it
+is the level 2 observation, not 3, that is passed to the psf
+function. That is so the PSF model can be drizzled using the same
+pattern used to drizzle the data. You can do the same with HST
+by just replacing "jwst" with "hst". 
+
+.. GENERATED FROM PYTHON SOURCE LINES 271-277
+
+.. code-block:: default
+
+
+    jwst3_obs = st_phot.observation3(files[0])
+    psf3 = st_phot.get_jwst3_psf(jwst_obs,sn_location,num_psfs=4)
+    plt.imshow(psf3.data)
+    plt.show()
+
+
+
+
+.. image-sg:: /examples/images/sphx_glr_plot_a_psf_015.png
+   :alt: plot a psf
+   :srcset: /examples/images/sphx_glr_plot_a_psf_015.png
+   :class: sphx-glr-single-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    yes err
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T11:04:11.545' from MJD-AVG.
+    Set DATE-END to '2022-10-06T11:50:05.577' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.954699 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.552882 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233357096.537 from OBSGEO-[XYZ]'.
+      warnings.warn(
+
+    Running instrument: NIRCam, filter: F150W
+      Running detector: NRCB3
+        Position 1/4: (0, 0) pixels
+        Position 1/4 centroid: (201.473112109223, 200.72440539884693)
+        Position 2/4: (0, 2047) pixels
+        Position 2/4 centroid: (201.7463744998794, 200.78239485839993)
+        Position 3/4: (2047, 0) pixels
+        Position 3/4 centroid: (201.46082149906897, 201.18357167071326)
+        Position 4/4: (2047, 2047) pixels
+        Position 4/4 centroid: (201.81556997259125, 201.1599927062982)
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
+    Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
+    Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:41:33.343' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T10:46:55.446' from MJD-AVG.
+    Set DATE-END to '2022-10-06T10:52:17.549' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.973145 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.561198 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233361578.113 from OBSGEO-[XYZ]'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:41:33.343' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T10:46:55.446' from MJD-AVG.
+    Set DATE-END to '2022-10-06T10:52:17.549' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.973145 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.561198 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233361578.113 from OBSGEO-[XYZ]'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:29:33.983' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T10:34:56.086' from MJD-AVG.
+    Set DATE-END to '2022-10-06T10:40:18.189' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.954699 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.552882 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233357096.537 from OBSGEO-[XYZ]'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:29:33.983' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T10:34:56.086' from MJD-AVG.
+    Set DATE-END to '2022-10-06T10:40:18.189' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.954699 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.552882 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233357096.537 from OBSGEO-[XYZ]'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:52:49.758' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T10:58:11.861' from MJD-AVG.
+    Set DATE-END to '2022-10-06T11:03:33.964' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.990493 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.569016 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233365823.364 from OBSGEO-[XYZ]'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:52:49.758' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T10:58:11.861' from MJD-AVG.
+    Set DATE-END to '2022-10-06T11:03:33.964' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.990493 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.569016 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233365823.364 from OBSGEO-[XYZ]'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/jwst/associations/association.py:215: UserWarning: 'expname' contains path, but should only be a filename.  All input files should be in a single directory, so no path is needed.
+      warnings.warn(err_str, UserWarning)
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/jwst/associations/association.py:215: UserWarning: 'expname' contains path, but should only be a filename.  All input files should be in a single directory, so no path is needed.
+      warnings.warn(err_str, UserWarning)
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/jwst/resample/resample_utils.py:184: RuntimeWarning: var_rnoise array not available. Setting drizzle weight map to 1
+      warnings.warn("var_rnoise array not available. Setting drizzle weight map to 1",
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/jwst/resample/resample_utils.py:184: RuntimeWarning: var_rnoise array not available. Setting drizzle weight map to 1
+      warnings.warn("var_rnoise array not available. Setting drizzle weight map to 1",
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/jwst/resample/resample_utils.py:184: RuntimeWarning: var_rnoise array not available. Setting drizzle weight map to 1
+      warnings.warn("var_rnoise array not available. Setting drizzle weight map to 1",
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/jwst/resample/resample_utils.py:184: RuntimeWarning: var_rnoise array not available. Setting drizzle weight map to 1
+      warnings.warn("var_rnoise array not available. Setting drizzle weight map to 1",
+    /Users/jpierel/CodeBase/st_phot/st_phot/util.py:347: ResourceWarning: unclosed file <_io.BufferedReader name='mastDownload/JWST/jw02767002001_02103_00004_nrcb3/jw02767002001_02103_00004_nrcb3_cal.fits'>
+      dat = fits.open(os.path.join(outdir,'temp_psf_cals_i2d.fits'))
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    Set DATE-AVG to '2022-10-06T10:40:55.766' from MJD-AVG.
+    Set DATE-END to '2022-10-06T11:03:33.964' from MJD-END'.
+      warnings.warn(
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
+      warnings.warn(
+    /Users/jpierel/CodeBase/st_phot/Docs/source/_examples/plot_a_psf.py:273: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/jpierel/CodeBase/st_phot/st_phot/temp_823/temp_psf_cals_i2d.fits'>
+      psf3 = st_phot.get_jwst3_psf(jwst_obs,sn_location,num_psfs=4)
+    /Users/jpierel/CodeBase/st_phot/Docs/source/_examples/plot_a_psf.py:275: UserWarning: Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.
+      plt.show()
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 278-280
+
+**Measure the PSF photometry**
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 280-292
+
+.. code-block:: default
+
+    jwst3_obs.psf_photometry(psf3,sn_location,bounds={'flux':[-1000,1000],
+                            'centroid':[-2,2],
+                            'bkg':[0,50]},
+                            fit_width=5,
+                            fit_bkg=True,
+                            fit_flux=True)
+    jwst3_obs.plot_psf_fit()
+    plt.show()
+
+    jwst3_obs.plot_psf_posterior(minweight=.0005)
+    plt.show()
+
+
+
+
+.. rst-class:: sphx-glr-horizontal
+
+
+    *
+
+      .. image-sg:: /examples/images/sphx_glr_plot_a_psf_016.png
+         :alt: Data, Model, Residual
+         :srcset: /examples/images/sphx_glr_plot_a_psf_016.png
+         :class: sphx-glr-multi-img
+
+    *
+
+      .. image-sg:: /examples/images/sphx_glr_plot_a_psf_017.png
+         :alt: flux = ${355.55}_{-2.45}^{+2.76}$, x0 = ${3340.09}_{-0.01}^{+0.01}$, y0 = ${1486.06}_{-0.01}^{+0.01}$, bkg = ${1.33}_{-0.01}^{+0.01}$
+         :srcset: /examples/images/sphx_glr_plot_a_psf_017.png
+         :class: sphx-glr-multi-img
+
 
 
 
@@ -622,7 +932,7 @@ for testing purposes.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 1 minutes  12.024 seconds)
+   **Total running time of the script:** ( 4 minutes  37.293 seconds)
 
 
 .. _sphx_glr_download_examples_plot_a_psf.py:

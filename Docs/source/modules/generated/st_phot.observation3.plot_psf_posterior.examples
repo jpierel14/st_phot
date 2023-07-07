@@ -1,7 +1,7 @@
 
 
-Examples using ``st_phot.photometry.observation.psf_photometry``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Examples using ``st_phot.observation3.plot_psf_posterior``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 .. start-sphx-glr-thumbnails

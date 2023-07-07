@@ -82,7 +82,7 @@ plt.show()
 # are missing, so for those you'll have to either use a 
 # neighboring filter or build your own PSF from stars in the field.
 
-hst_obs = st_phot.observation(files)
+hst_obs = st_phot.observation2(files)
 psfs = st_phot.get_hst_psf(hst_obs,sn_location)
 plt.imshow(psfs[0].data)
 plt.show()
@@ -186,7 +186,7 @@ plt.show()
 # save the ouptut, and then read it in and proceed to photometry
 # for testing purposes.
 
-jwst_obs = st_phot.observation(files)
+jwst_obs = st_phot.observation2(files)
 psfs = st_phot.get_jwst_psf(jwst_obs,sn_location,num_psfs=4)
 plt.imshow(psfs[0].data)
 plt.show()
@@ -194,7 +194,7 @@ plt.show()
 ####################################################################
 # **Measure the PSF photometry**
 # 
-jwst_obs.psf_photometry(psfs,sn_location,bounds={'flux':[-3000,100],
+jwst_obs.psf_photometry(psfs,sn_location,bounds={'flux':[-1000,1000],
                         'centroid':[-2,2],
                         'bkg':[0,50]},
                         fit_width=5,
@@ -207,4 +207,85 @@ jwst_obs.plot_psf_posterior(minweight=.0005)
 plt.show()
 
 print(jwst_obs.psf_result.phot_cal_table)
+
+#####################################################################
+# 
+# -----------
+# Level 3 PSF
+# -----------
+#
+# While it's generally recommended to perform PSF photometry on data
+# with level 2 processing (i.e., before drizzling), sometimes low
+# S/N means it's desirable to perform PSF photometry on level 3 data.
+# While (usually) not quite as accurate, here is a function to do
+# this. 
+#
+# **Download some Data**
+#
+# For this example we download JWST cal images from MAST. We just use
+# 4 of the 8 dithered exposures  for speed here, but in principle
+# st_phot can handle as many as are needed (given time).
+obs_table = Observations.query_criteria(obs_id='jw02767-o002_t001_nircam_clear-f150w')
+data_products_by_obs = Observations.get_product_list(obs_table)
+data_products_by_obs = data_products_by_obs[data_products_by_obs['calib_level']==3]
+data_products_by_obs = data_products_by_obs[data_products_by_obs['productSubGroupDescription']=='I2D']
+Observations.download_products(data_products_by_obs[0],extension='fits')
+
+####################################################################
+# **Examine the Image**
+# 
+
+files = glob.glob('mastDownload/JWST/*/*i2d.fits')
+ref_image = files[0]
+ref_fits = fits.open(ref_image)
+ref_data = fits.open(ref_image)['SCI',1].data
+norm1 = simple_norm(ref_data,stretch='linear',min_cut=-1,max_cut=10)
+
+plt.imshow(ref_data, origin='lower',
+                      norm=norm1,cmap='gray')
+plt.gca().tick_params(labelcolor='none',axis='both',color='none')
+plt.show()
+
+####################################################################
+# **Zoom in to see the Supernova**
+# 
+
+sn_location = SkyCoord('21:29:40.2103','+0:05:24.158',unit=(u.hourangle,u.deg))
+ref_y,ref_x = skycoord_to_pixel(sn_location,wcs.WCS(ref_fits['SCI',1],ref_fits))
+ref_cutout = extract_array(ref_data,(11,11),(ref_x,ref_y))
+norm1 = simple_norm(ref_cutout,stretch='linear',min_cut=-1,max_cut=10)
+plt.imshow(ref_cutout, origin='lower',
+                      norm=norm1,cmap='gray')
+plt.title('SN2022riv (level 3)')
+plt.gca().tick_params(labelcolor='none',axis='both',color='none')
+plt.show()
+
+####################################################################
+# **Get the PSF model**
+# 
+# (note the use of "3" instead of "2" everywhere). And note that it
+# is the level 2 observation, not 3, that is passed to the psf
+# function. That is so the PSF model can be drizzled using the same
+# pattern used to drizzle the data. You can do the same with HST
+# by just replacing "jwst" with "hst". 
+
+jwst3_obs = st_phot.observation3(files[0])
+psf3 = st_phot.get_jwst3_psf(jwst_obs,sn_location,num_psfs=4)
+plt.imshow(psf3.data)
+plt.show()
+
+####################################################################
+# **Measure the PSF photometry**
+# 
+jwst3_obs.psf_photometry(psf3,sn_location,bounds={'flux':[-1000,1000],
+                        'centroid':[-2,2],
+                        'bkg':[0,50]},
+                        fit_width=5,
+                        fit_bkg=True,
+                        fit_flux=True)
+jwst3_obs.plot_psf_fit()
+plt.show()
+
+jwst3_obs.plot_psf_posterior(minweight=.0005)
+plt.show()
 

@@ -1,7 +1,7 @@
 
 
-Examples using ``st_phot.photometry.observation.psf_photometry``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Examples using ``st_phot.get_jwst3_psf``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 .. start-sphx-glr-thumbnails
