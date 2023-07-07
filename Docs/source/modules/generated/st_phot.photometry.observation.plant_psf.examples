@@ -1,0 +1,39 @@
+
+
+Examples using ``st_phot.photometry.observation.plant_psf``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+.. start-sphx-glr-thumbnails
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Planting PSFs">
+
+.. only:: html
+
+  .. image:: /examples/images/thumb/sphx_glr_plot_c_plant_thumb.png
+    :alt: Planting PSFs
+
+  :ref:`sphx_glr_examples_plot_c_plant.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Planting PSFs</div>
+    </div>
+
+
+.. only:: not html
+
+ * :ref:`sphx_glr_examples_plot_c_plant.py`
+
+.. raw:: html
+
+    </div>
+

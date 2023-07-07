@@ -14,24 +14,24 @@ Examples using ``st_phot.observation.psf_photometry``
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="PSF Photometry">
+    <div class="sphx-glr-thumbcontainer" tooltip="Planting PSFs">
 
 .. only:: html
 
-  .. image:: /examples/images/thumb/sphx_glr_plot_a_psf_thumb.png
-    :alt: PSF Photometry
+  .. image:: /examples/images/thumb/sphx_glr_plot_c_plant_thumb.png
+    :alt: Planting PSFs
 
-  :ref:`sphx_glr_examples_plot_a_psf.py`
+  :ref:`sphx_glr_examples_plot_c_plant.py`
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">PSF Photometry</div>
+      <div class="sphx-glr-thumbnail-title">Planting PSFs</div>
     </div>
 
 
 .. only:: not html
 
- * :ref:`sphx_glr_examples_plot_a_psf.py`
+ * :ref:`sphx_glr_examples_plot_c_plant.py`
 
 .. raw:: html
 
