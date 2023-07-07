@@ -10,3 +10,5 @@ pytest-astropy
 matplotlib
 sphinx_gallery
 sncosmo
+astroquery
+drizzlepac
