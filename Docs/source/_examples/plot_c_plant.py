@@ -81,7 +81,7 @@ plt.show()
 # **Plant the PSF**
 # 
 
-jwst_obs.plant_psf(psfs[0],[[plant_x,plant_y]],26)
+jwst_obs.plant_psf(psfs,[[plant_x,plant_y]],26)
 planted_image = plant_image.replace('.fits','_plant.fits')
 planted_data = fits.open(planted_image)['SCI',1].data
 planted_cutout = extract_array(planted_data,(9,9),(plant_x,plant_y))
