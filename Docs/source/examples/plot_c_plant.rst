@@ -91,7 +91,7 @@ For this example we download JWST cal images from MAST. We just use
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=1</i>
-    <table id="table140429608239840" class="table-striped table-bordered table-condensed">
+    <table id="table140591731293056" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str92</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/JWST/jw02767002001_02103_00001_nrcb3/jw02767002001_02103_00001_nrcb3_cal.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -119,7 +119,7 @@ for testing purposes.
     files = glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*cal.fits')
     print(files)
     plant_location = SkyCoord('21:29:42.4104','+0:04:53.253',unit=(u.hourangle,u.deg))
-    jwst_obs = st_phot.observation(files)
+    jwst_obs = st_phot.observation2(files)
     psfs = st_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4)
     plt.imshow(extract_array(psfs[0].data,(9,9),(psfs[0].data.shape[0]/2,
         psfs[0].data.shape[1]/2)))
@@ -139,11 +139,11 @@ for testing purposes.
  .. code-block:: none
 
     ['mastDownload/JWST/jw02767002001_02103_00001_nrcb3/jw02767002001_02103_00001_nrcb3_cal.fits']
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
     Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
     Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
       warnings.warn(
@@ -199,11 +199,11 @@ You can see we've chosen a region of the image with no sources.
 
  .. code-block:: none
 
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
     Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
     Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
       warnings.warn(
@@ -221,7 +221,7 @@ You can see we've chosen a region of the image with no sources.
 .. code-block:: default
 
 
-    jwst_obs.plant_psf(psfs[0],[[plant_x,plant_y]],26)
+    jwst_obs.plant_psf(psfs,[[plant_x,plant_y]],26)
     planted_image = plant_image.replace('.fits','_plant.fits')
     planted_data = fits.open(planted_image)['SCI',1].data
     planted_cutout = extract_array(planted_data,(9,9),(plant_x,plant_y))
@@ -240,11 +240,29 @@ You can see we've chosen a region of the image with no sources.
 
 
 
-.. image-sg:: /examples/images/sphx_glr_plot_c_plant_003.png
-   :alt: Pre-Plant, Post-Plant
-   :srcset: /examples/images/sphx_glr_plot_c_plant_003.png
-   :class: sphx-glr-single-img
+.. rst-class:: sphx-glr-horizontal
 
+
+    *
+
+      .. image-sg:: /examples/images/sphx_glr_plot_c_plant_003.png
+         :alt: plot c plant
+         :srcset: /examples/images/sphx_glr_plot_c_plant_003.png
+         :class: sphx-glr-multi-img
+
+    *
+
+      .. image-sg:: /examples/images/sphx_glr_plot_c_plant_004.png
+         :alt: Pre-Plant, Post-Plant
+         :srcset: /examples/images/sphx_glr_plot_c_plant_004.png
+         :class: sphx-glr-multi-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    6.47655129925464 6.471176945746858
 
 
 
@@ -258,7 +276,7 @@ You can see we've chosen a region of the image with no sources.
 
 .. code-block:: default
 
-    jwst_obs = st_phot.observation(glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*plant.fits')
+    jwst_obs = st_phot.observation2(glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*plant.fits')
     )
 
     jwst_obs.psf_photometry(psfs,plant_location,bounds={'flux':[-3000,100],
@@ -284,16 +302,16 @@ You can see we've chosen a region of the image with no sources.
 
     *
 
-      .. image-sg:: /examples/images/sphx_glr_plot_c_plant_004.png
+      .. image-sg:: /examples/images/sphx_glr_plot_c_plant_005.png
          :alt: Data, Model, Residual
-         :srcset: /examples/images/sphx_glr_plot_c_plant_004.png
+         :srcset: /examples/images/sphx_glr_plot_c_plant_005.png
          :class: sphx-glr-multi-img
 
     *
 
-      .. image-sg:: /examples/images/sphx_glr_plot_c_plant_005.png
-         :alt: flux = ${5.54}_{-0.12}^{+0.15}$, x0 = ${1834.49}_{-0.02}^{+0.02}$, y0 = ${149.25}_{-0.02}^{+0.02}$, bkg = ${0.26}_{-0.01}^{+0.01}$
-         :srcset: /examples/images/sphx_glr_plot_c_plant_005.png
+      .. image-sg:: /examples/images/sphx_glr_plot_c_plant_006.png
+         :alt: flux = ${102.90}_{-1.46}^{+0.93}$, x0 = ${1834.49}_{-0.02}^{+0.02}$, y0 = ${149.26}_{-0.02}^{+0.02}$, bkg = ${0.27}_{-0.01}^{+0.01}$
+         :srcset: /examples/images/sphx_glr_plot_c_plant_006.png
          :class: sphx-glr-multi-img
 
 
@@ -301,17 +319,17 @@ You can see we've chosen a region of the image with no sources.
 
  .. code-block:: none
 
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
     Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
     Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
       warnings.warn(
-    Finished PSF psf_photometry with median residuals of 2.59%
-    PSF Mag: 25.975240433351242
-    Aperture Mag: 26.02872023857849
+    Finished PSF psf_photometry with median residuals of 0.32%
+    PSF Mag: 26.00972559856439
+    Aperture Mag: 25.912597620213745
 
 
 
@@ -319,7 +337,7 @@ You can see we've chosen a region of the image with no sources.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  38.845 seconds)
+   **Total running time of the script:** ( 0 minutes  51.714 seconds)
 
 
 .. _sphx_glr_download_examples_plot_c_plant.py:
