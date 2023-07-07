@@ -6,6 +6,9 @@ import webbpsf
 
 import sncosmo
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 import astropy
 from astropy import wcs
 from astropy.io import fits
@@ -14,9 +17,10 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 from astropy.stats import sigma_clipped_stats
 from astropy.time import Time
-from astropy.wcs.utils import skycoord_to_pixel
+from astropy.wcs.utils import skycoord_to_pixel,pixel_to_skycoord
 from astropy.nddata import extract_array
 
+import photutils
 from photutils import CircularAperture, CircularAnnulus, aperture_photometry
 from photutils.psf import EPSFModel
 warnings.simplefilter('ignore')
@@ -34,8 +38,137 @@ from jwst.associations.lib.rules_level3_base import DMS_Level3_Base
 from .wfc3_photometry.psf_tools.PSFUtils import make_models
 from .wfc3_photometry.psf_tools.PSFPhot import get_standard_psf
 
-__all__ = ['get_jwst_psf','get_hst_psf','get_jwst3_psf','get_jwst_psf_grid',
+__all__ = ['get_jwst_psf','get_hst_psf','get_jwst3_psf','get_hst3_psf','get_jwst_psf_grid',
             'get_jwst_psf_from_grid']
+
+def fancy_background_sub(st_obs,sky_locations=None,pixel_locations=None,width=13,
+                                bkg_mode='polynomial',combine_fits=True,do_fit=True,
+                                degree=2,h_wht_s = 1,v_wht_s=1,h_wht_p=1,v_wht_p=1,
+                                show_plot=False,minval=-np.inf,fudge_center=False,
+                                finalmin=-np.inf):
+    assert sky_locations is not None or pixel_locations is not None, "Must give skycoord or pixel."
+    sys.path.append('/Users/jpierel/CodeBase/manuscript_jupyter/pearls_sn/background_sub')
+    import MIRIMBkgInterp
+    mbi = MIRIMBkgInterp.MIRIMBkgInterp()
+    
+    mbi.src_x = (width+2-1)/2
+    mbi.src_y = (width+2-1)/2
+    mbi.aper_rad = 3 # radius of aperture around source
+    mbi.ann_width = 3 # width of annulus to compute interpolation from
+    mbi.bkg_mode=bkg_mode # type of interpolation. Options "none","simple","polynomial" 
+    mbi.combine_fits = True # use the simple model to attenuate the polynomial model
+    mbi.degree = degree # degree of polynomial fit
+    mbi.h_wht_s = h_wht_s # horizontal weight of simple model
+    mbi.v_wht_s = v_wht_s # vertical weight of simple model
+    mbi.h_wht_p = h_wht_p # horizontal weight of polynomial model
+    mbi.v_wht_p = v_wht_p # vertical weight of simple model
+    if pixel_locations is None and not isinstance(sky_locations,(list,tuple,np.ndarray)):
+        sky_locations = [sky_locations]*st_obs.n_exposures
+    elif isinstance(pixel_locations[0],(int,float)):
+        pixel_locations = [pixel_locations]*st_obs.n_exposures
+
+    final_pixels = []
+    nests = []
+    for i in range(st_obs.n_exposures):
+        if pixel_locations is None:
+            if st_obs.n_exposures==1:
+                wcs = st_obs.wcs
+            else:
+                wcs = st_obs.wcs_list[i]
+            x,y = wcs.world_to_pixel(sky_locations[i])
+            x = int(x)
+            y = int(y)
+        else:
+            x,y = pixel_locations[i]
+            x = int(x)
+            y = int(y)
+        #print(x,y)
+        width+=2
+        if st_obs.n_exposures==1:
+            cutout = st_obs.data[y-int((width-1)/2):y+int((width-1)/2)+1,
+                                    x-int((width-1)/2):x+int((width-1)/2)+1]
+        else:
+            cutout = st_obs.data_arr_pam[i][y-int((width-1)/2):y+int((width-1)/2)+1,
+                                    x-int((width-1)/2):x+int((width-1)/2)+1]
+
+
+        
+
+        cutout[cutout<minval] = np.nan
+
+        if fudge_center:
+            init_center = int((width-1)/2)
+            #plt.imshow(cutout)
+            #plt.show()
+            #plt.imshow(cutout[init_center-1:init_center+2,init_center-1:init_center+2])
+            #plt.show()
+            maxcell = np.argmax(cutout[init_center-1:init_center+2,init_center-1:init_center+2])
+            max_ind = np.unravel_index(maxcell,(3,3))
+            x,y = np.array([x,y]) + (np.flip(max_ind)-np.array([1,1]))
+            #print(x,y)
+            if st_obs.n_exposures==1:
+                cutout = st_obs.data[y-int((width-1)/2):y+int((width-1)/2)+1,
+                                        x-int((width-1)/2):x+int((width-1)/2)+1]
+            else:
+                cutout = st_obs.data_arr_pam[i][y-int((width-1)/2):y+int((width-1)/2)+1,
+                                        x-int((width-1)/2):x+int((width-1)/2)+1]
+
+        final_pixels.append([y,x])
+        
+
+            
+        if show_plot:
+            norm = astropy.visualization.simple_norm(cutout[1:-1,1:-1],invalid=0)
+            fig, axes = plt.subplots(1,4,figsize=(12,5))
+            axes[0].set_title('image')
+            axes[0].imshow(cutout[1:-1,1:-1],origin='lower',norm=norm,cmap='viridis')
+        
+        # run interpolation
+        if not do_fit:
+            diff, bkg, mask = mbi.run(cutout)
+            
+        else:
+            (diff, bkg, mask), result_nest = mbi.run_opt(cutout)
+            nests.append(result_nest)
+        #print(np.nanmedian(diff[0]))
+        #print(np.nanmedian(bkg[0]))
+        #print(np.nanmedian(mask[0]))
+        #print()
+        #print()
+        width-=2
+        for n in range(int((width-1)/2)-1,int((width-1)/2)+2):
+            for j in range(int((width-1)/2)-1,int((width-1)/2)+2):
+                if diff[0][n][j]<finalmin:
+                    diff[0][n][j] = 0
+        if st_obs.n_exposures==1:
+            st_obs.data[y-int((width-1)/2):y+int((width-1)/2)+1,
+                                    x-int((width-1)/2):x+int((width-1)/2)+1] = diff[0]
+        else:
+            st_obs.data_arr_pam[i][y-int((width-1)/2):y+int((width-1)/2)+1,
+                                x-int((width-1)/2):x+int((width-1)/2)+1] = diff[0]
+
+        if show_plot:
+            
+
+            
+
+            axes[1].set_title('masked')
+            axes[1].imshow(mask[0],origin='lower',norm=norm,cmap='viridis')
+
+            axes[2].set_title('bkg')
+            im1 = axes[2].imshow(bkg[0],origin='lower',norm=norm,cmap='viridis')
+            divider = make_axes_locatable(axes[2])
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im1, cax=cax, orientation='vertical')
+            axes[3].set_title('bkg sub')
+            norm = astropy.visualization.simple_norm(diff[0],invalid=0)
+            im2 = axes[3].imshow(diff[0],origin='lower',norm=norm,cmap='seismic')
+            divider2 = make_axes_locatable(axes[3])
+            cax2 = divider2.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im2, cax=cax2, orientation='vertical')
+            plt.show()
+    st_obs.fancy_background_centers = final_pixels
+    return st_obs,nests,mbi
 
 def filter_dict_from_list(filelist,sky_location=None):
     filt_dict = {}
@@ -58,20 +191,24 @@ def get_jwst_psf_grid(st_obs,num_psfs=16):
     inst.filter = st_obs.filter
     inst.detector=st_obs.detector
 
-    grid = inst.psf_grid(num_psfs=num_psfs,all_detectors=False)
+    grid = inst.psf_grid(num_psfs=num_psfs,all_detectors=False,oversample=4)
     return grid
 
 def get_jwst_psf_from_grid(st_obs,sky_location,grid,psf_width=101):
+
+    grid.oversampling = 1
     psf_list = []
     for i in range(st_obs.n_exposures):
         imwcs = st_obs.wcs_list[i]
         x,y = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
         grid.x_0 = x
         grid.y_0 = y
-        yg, xg = np.mgrid[-1*(psf_width-1)/2:(psf_width+1)/2,-1*(psf_width-1)/2:(psf_width+1)/2].astype(int)
-        yf, xf = yg+int(y+.5), xg+int(x+.5)
+       
+        xf, yf = np.meshgrid(np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(x+.5),
+                            np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(y+.5))
+
         psf = np.array(grid(xf,yf)).astype(float)
-        epsf_model = EPSFModel(psf)
+        epsf_model = photutils.psf.FittableImageModel(psf,normalize=True,oversampling=4)
         psf_list.append(epsf_model)
     return psf_list
 
@@ -80,38 +217,115 @@ def get_jwst_psf(st_obs,sky_location,num_psfs=16,psf_width=101):
     inst.filter = st_obs.filter
     inst.detector=st_obs.detector
 
-    grid = inst.psf_grid(num_psfs=num_psfs,all_detectors=False)
+    grid = inst.psf_grid(num_psfs=num_psfs,all_detectors=False,oversample=4)
     psf_list = []
+    grid.oversampling=1
+    for i in range(st_obs.n_exposures):
+        imwcs = st_obs.wcs_list[i]
+        x,y = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
+
+        grid.x_0 = x
+        grid.y_0 = y
+        xf, yf = np.meshgrid(np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(x+.5),
+                            np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(y+.5))
+        psf = np.array(grid(xf,yf)).astype(float)
+        
+        epsf_model = photutils.psf.FittableImageModel(psf,normalize=True,oversampling=4)
+        psf_list.append(epsf_model)
+    return psf_list
+
+def get_jwst3_psf(st_obs,sky_location,num_psfs=16,psf_width=101):
+    #psfs = get_jwst_psf(st_obs,sky_location,num_psfs=num_psfs,psf_width=psf_width)
+    grid = get_jwst_psf_grid(st_obs,num_psfs=num_psfs)
+    grid.oversampling = 1 
+    psfs = []
     for i in range(st_obs.n_exposures):
         imwcs = st_obs.wcs_list[i]
         x,y = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
         grid.x_0 = x
         grid.y_0 = y
-        yg, xg = np.mgrid[-1*(psf_width-1)/2:(psf_width+1)/2,-1*(psf_width-1)/2:(psf_width+1)/2].astype(int)
-        yf, xf = yg+int(y+.5), xg+int(x+.5)
-        psf = np.array(grid(xf,yf)).astype(float)
-        epsf_model = EPSFModel(psf)
-        psf_list.append(epsf_model)
-    return psf_list
+       
+        xf, yf = np.meshgrid(np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(x+.5),
+                            np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(y+.5))
 
-def get_jwst3_psf(st_obs,sky_location,num_psfs=16,psf_width=101):
-    psfs = get_jwst_psf(st_obs,sky_location,num_psfs=num_psfs,psf_width=psf_width)
+        psf = np.array(grid(xf,yf)).astype(float)
+        epsf_model = photutils.psf.FittableImageModel(psf,normalize=True,oversampling=1)
+        psfs.append(epsf_model)
 
     outdir = os.path.join(os.path.abspath(os.path.dirname(__file__)),'temp_%i'%np.random.randint(0,1000))
     os.mkdir(outdir)
+    #print(outdir)
     try:
         out_fnames = []
         for i,f in enumerate(st_obs.exposure_fnames):
+            #print(f)
             dat = fits.open(f)
+            dat['SCI',1].data[np.isnan(dat['SCI',1].data)] = 0
+            #xf, yf = np.mgrid[0:dat['SCI',1].data.shape[0],0:dat['SCI',1].data.shape[1]].astype(int)
+            norm = astropy.visualization.simple_norm(dat['SCI',1].data,invalid=0,min_cut=-.15,max_cut=.3)
+            #print(np.max(dat['SCI',1].data))
+            #plt.imshow(dat[1].data,norm=norm)
+            #plt.show()
             imwcs = wcs.WCS(dat['SCI',1])
             y,x = skycoord_to_pixel(sky_location,imwcs)
-            yf, xf = np.mgrid[0:dat['SCI',1].data.shape[0],0:dat['SCI',1].data.shape[1]].astype(int)
+            
+            #print(x,y,pixel_to_skycoord(x,y,imwcs))
+            if False:
+                newx = dat[1].header['NAXIS1']*4
+                newy = dat[1].header['NAXIS2']*4
+                dat[1].header['NAXIS1'] = newx
+                dat[1].header['NAXIS2'] = newy
+                old_wcs = wcs.WCS(dat[1])
+                #print(old_wcs)
+                new_wcs = old_wcs[::.25,::.25].to_header()
+                for k in ['PC1_1', 'PC1_2','PC2_1','PC2_2']:
+                    new_wcs[k]/=4
+
+
+                for key in new_wcs.keys():
+                    if len(key)>0:
+                        #dm_fits[i].header[key+'A'] = dm_fits[i].header[key]
+                        #if not (self.do_driz or ('CRPIX' in key or 'CTYPE' in key)):
+                        if 'CTYPE' not in key:
+                            if key.startswith('PC') and key not in dat[1].header.keys():
+                                dat[1].header.set(key.replace('PC','CD'),value=new_wcs[key])
+                            elif key in dat[1].header:
+                                dat[1].header.set(key,value=new_wcs[key])
+                                #else:
+                                #    dm_fits[i].header.set(key,value='TWEAK')
+                            #else:
+                            #   print(key)
+                            #   sys.exit()
+                dat[1].header['PIXAR_A2'] = dat[1].header['PIXAR_A2']/16
+            #print(newx,newy)
+            #dat['SCI',1].data = np.zeros((newx,newy))
+            imwcs = wcs.WCS(dat['SCI',1])
+            #print(imwcs)
+            y,x = skycoord_to_pixel(sky_location,imwcs)
+            #print(x,y,pixel_to_skycoord(x,y,imwcs),dat['SCI',1].data.shape)
+
+            xf, yf = np.mgrid[0:dat['SCI',1].data.shape[0],0:dat['SCI',1].data.shape[1]].astype(int)
             psfs[i].x_0 = x
             psfs[i].y_0 = y
-            dat['SCI',1].data = psfs[i](yf,xf)
+            
+        
+            dat['SCI',1].data = psfs[i](xf,yf)
+            dat['SCI',1].data/=st_obs.pams[i]#scipy.ndimage.zoom(st_obs.pams[i],4)
+            #print(np.max(dat['SCI',1].data))
+            #dat['SCI',1].data[dat['SCI',1].data>.005] = 10000
+            #plt.imshow(dat[1].data[xf,yf],vmin=0,vmax=.005)
+
+            #plt.show()
+            #sys.exit()
+            
+            dat['ERR',1].data = np.ones((1,1))
+            dat['VAR_RNOISE',1].data = np.ones((1,1))
+            dat['VAR_POISSON',1].data = np.ones((1,1))
+            dat['VAR_FLAT',1].data = np.ones((1,1))
+            dat['DQ',1].data = np.zeros(dat[1].data.shape)
             dat.writeto(os.path.join(outdir,os.path.basename(f)),overwrite=True)
             out_fnames.append(os.path.join(outdir,os.path.basename(f)))
-            
+        #sys.exit()
         asn = asn_from_list.asn_from_list(out_fnames, rule=DMS_Level3_Base, 
             product_name='temp_psf_cals')
         
@@ -122,37 +336,58 @@ def get_jwst3_psf(st_obs,sky_location,num_psfs=16,psf_width=101):
         pipe3.output_dir = outdir
         pipe3.save_results = True
         pipe3.tweakreg.skip = True
+        pipe3.outlier_detection.skip = True
+        pipe3.skymatch.skip = True
+        pipe3.source_catalog.skip = True
+        #pipe3.resample.output_shape = (newx,newy)
         pipe3.outlier_detection.save_results = False
-
+        #pipe3.resample.pixel_scale = np.sqrt(dat[1].header['PIXAR_A2'])
+        #pipe3.resample.pixel_scale_ratio = .25
         pipe3.run(os.path.join(outdir,'cal_data_asn.json'))
         dat = fits.open(os.path.join(outdir,'temp_psf_cals_i2d.fits'))
         imwcs = wcs.WCS(dat['SCI',1])
-        y,x = skycoord_to_pixel(sky_location,imwcs)
-        psf3 = extract_array(dat['SCI',1].data,(psf_width,psf_width),(x,y))
-        epsf3 = EPSFModel(psf3)
+        level3 = dat[1].data
+        level3[np.isnan(level3)] = 0 
+        #print(np.max(level3))
+        #sys.exit()
+        y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
+        mx,my = np.meshgrid(np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(x+.5),
+                            np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(y+.5))
+        
+        level3_psf = photutils.psf.FittableImageModel(level3[mx,my],normalize=True, 
+                                                      oversampling=4)
         shutil.rmtree(outdir)
-    except:
+    except RuntimeError:
         print('Failed to create PSF model')
         shutil.rmtree(outdir)
-    return epsf3
+    return level3_psf
 
-def get_hst_psf(st_obs,sky_location,psf_width=101):
+def get_hst_psf(st_obs,sky_location,psf_width=25):
     grid = make_models(get_standard_psf(os.path.join(os.path.abspath(os.path.dirname(__file__)),
             'wfc3_photometry/psfs'),st_obs.filter,st_obs.detector))[0]
     psf_list = []
     for i in range(st_obs.n_exposures):
         imwcs = st_obs.wcs_list[i]
-        x,y = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
-        grid.x_0 = x
-        grid.y_0 = y
-        yg, xg = np.mgrid[-1*(psf_width-1)/2:(psf_width+1)/2,-1*(psf_width-1)/2:(psf_width+1)/2].astype(int)
-        yf, xf = yg+int(y+.5), xg+int(x+.5)
-        psf = np.array(grid(xf,yf)).astype(float)
-        epsf_model = EPSFModel(psf)
-        psf_list.append(epsf_model)
+        y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
+        psfmodel = grid._compute_local_model(int(x), int(y))
+        psfmodel.x_0 = x#int(x)
+        psfmodel.y_0 = y#int(y)
+        psf_list.append(psfmodel)
+
+        #yg, xg = np.mgrid[-1*(psf_width-1)/2:(psf_width+1)/2,-1*(psf_width-1)/2:(psf_width+1)/2].astype(int)
+        #yf, xf = yg+int(y+.5), xg+int(x+.5)
+        #yf, xf = yg+int(np.round(y)), xg+int(np.round(x))
+        #psf = np.array(psfmodel(xf,yf)).astype(float)
+        #plt.imshow(psf)
+        #plt.show()
+        #continue
+        #print(x,y)
+        
+        #epsf_model = EPSFModel(psf)
+        #psf_list.append(epsf_model)
     return psf_list
 
-def get_hst3_psf(st_obs,sky_location,psf_width=101):
+def get_hst3_psf(st_obs,sky_location,psf_width=25):
     from drizzlepac import astrodrizzle
     psfs = get_hst_psf(st_obs,sky_location,psf_width=psf_width)
 
@@ -162,35 +397,80 @@ def get_hst3_psf(st_obs,sky_location,psf_width=101):
         out_fnames = []
         for i,f in enumerate(st_obs.exposure_fnames):
             dat = fits.open(f)
-            imwcs = wcs.WCS(dat['SCI',1],dat)
-            y,x = skycoord_to_pixel(sky_location,imwcs)
-            yf, xf = np.mgrid[0:dat['SCI',1].data.shape[0],0:dat['SCI',1].data.shape[1]].astype(int)
-            psfs[i].x_0 = x
-            psfs[i].y_0 = y
-            dat['SCI',1].data = psfs[i](yf,xf)
+            newx = dat[1].header['NAXIS1']*4
+            newy = dat[1].header['NAXIS2']*4
+            
+            old_wcs = wcs.WCS(dat[1])
+            new_wcs = old_wcs[::.25,::.25].to_header()
+            for k in ['PC1_1', 'PC1_2','PC2_1','PC2_2']:
+                new_wcs[k]/=4
+
+
+            for key in new_wcs.keys():
+                   if len(key)>0:
+                       #dm_fits[i].header[key+'A'] = dm_fits[i].header[key]
+                       #if not (self.do_driz or ('CRPIX' in key or 'CTYPE' in key)):
+                        if 'CTYPE' not in key:
+                            if key.startswith('PC') and key not in dat[1].header.keys():
+                                dat[1].header.set(key.replace('PC','CD'),value=new_wcs[key])
+                            elif key in dat[1].header:
+                                dat[1].header.set(key,value=new_wcs[key])
+                            #else:
+                            #    dm_fits[i].header.set(key,value='TWEAK')
+                            
+            dat[1].header['IDCSCALE'] = dat[1].header['IDCSCALE']/4
+            dat['SCI',1].data = np.zeros((newx,newy))
+            y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,wcs.WCS(dat[1]))
+            psf2 = photutils.psf.FittableImageModel(psfs[i].data,normalize=True, 
+                                                      oversampling=1)
+            psf2.x_0 = x
+            psf2.y_0 = y
+            x = int(x+.5)
+            y = int(y+.5)
+            
+            gx, gy = np.mgrid[0:newx,0:newy].astype(int)
+            dat[1].data = psf2.evaluate(gx,gy,psf2.flux.value,psf2.x_0.value,psf2.y_0.value,
+                                        use_oversampling=False)
+            dat[1].data[dat[1].data<0] = 0
+            dat[1].data/=scipy.ndimage.zoom(st_obs.pams[0],4)
+
+            dat['DQ',1].data = np.zeros((newx,newy)).astype(int)
+            dat['ERR',1].data = np.ones((newx,newy))
             dat.writeto(os.path.join(outdir,os.path.basename(f)),overwrite=True)
             out_fnames.append(os.path.join(outdir,os.path.basename(f)))
             
         
 
-        astrodrizzle.AstroDrizzle(','.join(out_fnames),clean=True,output=os.path.join(outdir,'temp_psf'))
+        astrodrizzle.AstroDrizzle(','.join(out_fnames),output=os.path.join(outdir,'temp_psf'),
+                            build=True,median=False,skysub=False,
+                            driz_cr_corr=False,final_wht_type='ERR',driz_separate=False,
+                            driz_cr=False,blot=False,clean=True,
+                            final_outnx=int(1014*4),final_outny=int(1014*4))
         
-        dat = fits.open(glob.glob(os.path.join(outdir,'temp_psf*sci.fits'))[0])
-        imwcs = wcs.WCS(dat[0])
+        dat = fits.open(glob.glob(os.path.join(outdir,'temp_psf_drz.fits'))[0])
+        imwcs = wcs.WCS(dat[1])
         y,x = skycoord_to_pixel(sky_location,imwcs)
-        psf3 = extract_array(dat[0].data,(psf_width,psf_width),(x,y))
-        epsf3 = EPSFModel(psf3)
+        level3 = dat[1].data
+        level3[np.isnan(level3)] = 0 
+        y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
+        mx,my = np.meshgrid(np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(x+.5),
+                            np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(y+.5))
+        
+        level3_psf = photutils.psf.FittableImageModel(level3[mx,my],normalize=True, 
+                                                      oversampling=4)
+        
         shutil.rmtree(outdir)
-    except:
+    except RuntimeError:
         print('Failed to create PSF model')
         shutil.rmtree(outdir)
-    return epsf3
-def jwst_apcorr(fname,ee=70):
+    return level3_psf
+def jwst_apcorr(fname,ee=70,alternate_ref=None):
     sc = source_catalog.source_catalog_step.SourceCatalogStep()
+    if alternate_ref is not None:
+        fname = alternate_ref
     with datamodels.open(fname) as model:
         reffile_paths = sc._get_reffile_paths(model)
         aperture_ee = (20,30,ee)
-
         refdata = reference_data.ReferenceData(model, reffile_paths,
                                 aperture_ee)
         aperture_params = refdata.aperture_params
@@ -318,9 +598,10 @@ def hst_apcorr(ap,filt,inst):
         ee.remove_column('PIVOT')
     else:
         if not os.path.exists('wfc3uvis2_aper_007_syn.csv'):
+
             urllib.request.urlretrieve('https://www.stsci.edu/files/live/sites/www/files/home/hst/'+\
                                     'instrumentation/wfc3/data-analysis/photometric-calibration/'+\
-                                    'uvis-encircled-energy/_documents/wfc3uvis2_aper_007_syn.csv')
+                                    'uvis-encircled-energy/_documents/wfc3uvis2_aper_007_syn.csv','wfc3uvis2_aper_007_syn.csv')
         ee = Table.read('wfc3uvis2_aper_007_syn.csv',format='ascii')
     
         ee.remove_column('FILTER')

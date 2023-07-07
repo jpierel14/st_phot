@@ -66,6 +66,22 @@ def calibrate_HST_flux(flux,fluxerr,primary_header,sci_header):
     mag = -2.5*np.log10(flux)+zp
     return(np.array(flux),np.array(fluxerr),np.array(mag),np.array(magerr),float(zp))
 
+def HST_mag_to_flux(mag,primary_header,sci_header,zpsys='ab'):
+    instrument = primary_header['DETECTOR']
+    #flux/=primary_header['EXPTIME']
+    #fluxerr/=primary_header['EXPTIME']
+    if instrument=='IR':
+        zp = hst_get_zp(primary_header['FILTER'],'ab')
+    else:
+        try:
+            photflam = sci_header['PHOTFLAM']
+        except:
+            photflam = primary_header['PHOTFLAM']
+        photplam = sci_header['PHOTPLAM']
+        zp = -2.5*np.log10(photflam)-5*np.log10(photplam)-2.408
+
+    flux = 10**(-.4*(mag-zp))
+    return(flux)
 
 def calc_jwst_psf_corr(ap_rad,instrument,band,imwcs,oversample=4,show_plot=False,psf=None):
     if psf is None:

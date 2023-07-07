@@ -53,7 +53,7 @@ Observations.download_products(data_products_by_obs,extension='fits')
 files = glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*cal.fits')
 print(files)
 plant_location = SkyCoord('21:29:42.4104','+0:04:53.253',unit=(u.hourangle,u.deg))
-jwst_obs = st_phot.observation(files)
+jwst_obs = st_phot.observation2(files)
 psfs = st_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4)
 plt.imshow(extract_array(psfs[0].data,(9,9),(psfs[0].data.shape[0]/2,
     psfs[0].data.shape[1]/2)))
@@ -100,7 +100,7 @@ plt.show()
 ####################################################################
 # **Measure PSF photometry and Aperture photometry for the source**
 # 
-jwst_obs = st_phot.observation(glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*plant.fits')
+jwst_obs = st_phot.observation2(glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*plant.fits')
 )
 
 jwst_obs.psf_photometry(psfs,plant_location,bounds={'flux':[-3000,100],
