@@ -16,7 +16,7 @@ if sys.version_info < (3, 0):
 
 AUTHOR = 'Justin Pierel'
 AUTHOR_EMAIL = 'jpierel@stsci.edu'
-VERSION = '0.1.1'
+VERSION = '0.0.1'
 LICENSE = 'BSD'
 URL = ''
 
@@ -29,7 +29,7 @@ def recursive_glob(basedir, pattern):
     return matches
 
 
-PACKAGENAME = 'st_phot'
+PACKAGENAME = 'space_phot'
 # Add the project-global data
 #data_files = []
 pkgdatadir = os.path.join(PACKAGENAME, 'wfc3_photometry')
@@ -43,7 +43,7 @@ setup(
     name=PACKAGENAME,
     setup_requires=['numpy'],
     install_requires=['numpy', 'astropy','jwst','sncosmo','webbpsf','corner','nestle',
-                        'stsci.skypac'],
+                        'stsci.skypac','photutils'],
     packages=[PACKAGENAME],
     package_data={PACKAGENAME: data_files},
 

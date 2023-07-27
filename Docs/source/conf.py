@@ -15,12 +15,12 @@
 import os
 import sys
 #sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../../st_phot'))
+sys.path.insert(0, os.path.abspath('../../space_phot'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'st_phot'
+project = 'space_phot'
 copyright = '2022 Justin Pierel'
 author = 'Justin Pierel'
 
@@ -88,7 +88,7 @@ pygments_style = None
 
 
 html_theme= 'sphinx_rtd_theme'
-html_logo = "_static/st_phot.png"
+html_logo = "_static/space_phot.png"
 
 
 
@@ -107,7 +107,7 @@ sphinx_gallery_conf = {
     'gallery_dirs': 'examples',   # path to gallery generated examples
     'backreferences_dir': 'modules/generated',  # path to store the module
                                              # using example template
-    'doc_module': ('st_phot',),  # documented module(s)
+    'doc_module': ('space_phot',),  # documented module(s)
     #'download_section_examples': False,
     #'download_all_examples': False,  # don't package up examples.
     #'default_thumb_file': os.path.join(os.path.dirname(__file__), '_logo',
@@ -119,7 +119,7 @@ sphinx_gallery_conf = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-html_favicon = '_static/st_phot.png'
+html_favicon = '_static/space_phot.png'
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -135,7 +135,7 @@ html_favicon = '_static/st_phot.png'
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'st_phot'+'doc'
+htmlhelp_basename = 'space_phot'+'doc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -162,7 +162,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'st_phot'+'.tex', 'st_phot'+' Documentation',
+    (master_doc, 'space_phot'+'.tex', 'space_phot'+' Documentation',
      'Justin Pierel', 'manual'),
 ]
 
@@ -172,7 +172,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'st_phot', 'st_phot'+' Documentation',
+    (master_doc, 'space_phot', 'space_phot'+' Documentation',
      [author], 1)
 ]
 
@@ -183,8 +183,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'st_phot', 'st_phot'+' Documentation',
-     author, 'st_phot', 'One line description of project.',
+    (master_doc, 'space_phot', 'space_phot'+' Documentation',
+     author, 'space_phot', 'One line description of project.',
      'Miscellaneous'),
 ]
 

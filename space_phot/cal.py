@@ -19,11 +19,11 @@ def hst_get_zp(filt,zpsys='ab'):
         print('unknown zpsys')
         return
 
-def calibrate_JWST_flux(flux,fluxerr,imwcs,units = astropy.units.MJy):
+def calibrate_JWST_flux(flux,fluxerr,imwcs,flux_units=None,units = astropy.units.MJy):
     magerr = 2.5 * np.log10(1.0 + (fluxerr/flux))
-
-    pixel_scale = astropy.wcs.utils.proj_plane_pixel_scales(imwcs)[0]  * imwcs.wcs.cunit[0].to('arcsec')
-    flux_units = astropy.units.MJy / astropy.units.sr * (pixel_scale * astropy.units.arcsec)**2
+    if flux_units is None or flux_units==astropy.units.MJy/astropy.units.sr:
+        pixel_scale = astropy.wcs.utils.proj_plane_pixel_scales(imwcs)[0]  * imwcs.wcs.cunit[0].to('arcsec')
+        flux_units = astropy.units.MJy / astropy.units.sr * (pixel_scale * astropy.units.arcsec)**2
     flux = flux*flux_units
     fluxerr = fluxerr*flux_units
     flux = flux.to(units)
@@ -33,16 +33,17 @@ def calibrate_JWST_flux(flux,fluxerr,imwcs,units = astropy.units.MJy):
     #print(mag,-2.5*np.log10(flux.value))
     return(flux.value,fluxerr.value,mag.value,magerr,zp)
 
-def JWST_mag_to_flux(mag,imwcs,zpsys='ab'):
+def JWST_mag_to_flux(mag,imwcs,zpsys='ab',density=True):
     if zpsys=='ab':
         flux = (mag*astropy.units.ABmag).to(astropy.units.MJy)
     elif zpsys=='vega':
         flux = (mag*astropy.units.Vegamag).to(astropy.units.MJy)
     else:
         raise RuntimeError('Do not recognize zpsys')
-    pixel_scale = astropy.wcs.utils.proj_plane_pixel_scales(imwcs)[0]  * imwcs.wcs.cunit[0].to('arcsec')
+    if density:
+        pixel_scale = astropy.wcs.utils.proj_plane_pixel_scales(imwcs)[0]  * imwcs.wcs.cunit[0].to('arcsec')
 
-    flux /=  ((pixel_scale * astropy.units.arcsec)**2).to(astropy.units.sr)
+        flux /=  ((pixel_scale * astropy.units.arcsec)**2).to(astropy.units.sr)
     
     return flux.value
 
