@@ -3,32 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the Space Telescope Photometry Tool 
-==============================================
+This Package has moved 
+======================
+
+`space-phot.readthedocs.io<space-phot.readthedocs.io>`_
 
 
-.. toctree::
-   :maxdepth: 1
-   :titlesonly:
 
-   install
-
-.. include:: examples/index.rst
-   :start-after: :orphan:
-
-.. toctree::
-   :hidden:
-   :titlesonly:
-
-   api
-   contributors
-
-:doc:`api`
-================
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
