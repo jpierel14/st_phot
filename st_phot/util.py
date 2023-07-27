@@ -216,6 +216,7 @@ def get_jwst_psf(st_obs,sky_location,num_psfs=16,psf_width=101):
     inst = webbpsf.instrument(st_obs.instrument)
     inst.filter = st_obs.filter
     inst.detector=st_obs.detector
+    inst.pixelscale = st_obs.pixel_scale
 
     grid = inst.psf_grid(num_psfs=num_psfs,all_detectors=False,oversample=4)
     psf_list = []
@@ -369,7 +370,10 @@ def get_hst_psf(st_obs,sky_location,psf_width=25):
     for i in range(st_obs.n_exposures):
         imwcs = st_obs.wcs_list[i]
         y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
-        psfmodel = grid._compute_local_model(int(x), int(y))
+        psfinterp = grid._calc_interpolator(int(x), int(y))
+        _psf_interp = psfinterp(grid._xidx, grid._yidx)
+        psfmodel = photutils.psf.FittableImageModel(_psf_interp,
+                                      oversampling=grid.oversampling)
         psfmodel.x_0 = x#int(x)
         psfmodel.y_0 = y#int(y)
         psf_list.append(psfmodel)
@@ -400,7 +404,7 @@ def get_hst3_psf(st_obs,sky_location,psf_width=25):
             newx = dat[1].header['NAXIS1']*4
             newy = dat[1].header['NAXIS2']*4
             
-            old_wcs = wcs.WCS(dat[1])
+            old_wcs = wcs.WCS(dat[1],dat)
             new_wcs = old_wcs[::.25,::.25].to_header()
             for k in ['PC1_1', 'PC1_2','PC2_1','PC2_2']:
                 new_wcs[k]/=4
@@ -419,8 +423,8 @@ def get_hst3_psf(st_obs,sky_location,psf_width=25):
                             #    dm_fits[i].header.set(key,value='TWEAK')
                             
             dat[1].header['IDCSCALE'] = dat[1].header['IDCSCALE']/4
-            dat['SCI',1].data = np.zeros((newx,newy))
-            y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,wcs.WCS(dat[1]))
+            dat['SCI',1].data = np.zeros((newy,newx))
+            y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,wcs.WCS(dat[1],dat))
             psf2 = photutils.psf.FittableImageModel(psfs[i].data,normalize=True, 
                                                       oversampling=1)
             psf2.x_0 = x
@@ -432,10 +436,14 @@ def get_hst3_psf(st_obs,sky_location,psf_width=25):
             dat[1].data = psf2.evaluate(gx,gy,psf2.flux.value,psf2.x_0.value,psf2.y_0.value,
                                         use_oversampling=False)
             dat[1].data[dat[1].data<0] = 0
-            dat[1].data/=scipy.ndimage.zoom(st_obs.pams[0],4)
+
+            dat[1].data/=scipy.ndimage.zoom(st_obs.pams[0].T,4)
 
             dat['DQ',1].data = np.zeros((newx,newy)).astype(int)
             dat['ERR',1].data = np.ones((newx,newy))
+            print(dat)
+            dat = dat[:4]
+            print(dat)
             dat.writeto(os.path.join(outdir,os.path.basename(f)),overwrite=True)
             out_fnames.append(os.path.join(outdir,os.path.basename(f)))
             
@@ -447,15 +455,19 @@ def get_hst3_psf(st_obs,sky_location,psf_width=25):
                             driz_cr=False,blot=False,clean=True,
                             final_outnx=int(1014*4),final_outny=int(1014*4))
         
-        dat = fits.open(glob.glob(os.path.join(outdir,'temp_psf_drz.fits'))[0])
-        imwcs = wcs.WCS(dat[1])
+        try:
+            dat = fits.open(glob.glob(os.path.join(outdir,'temp_psf_drz.fits'))[0])
+        except:
+            dat = fits.open(glob.glob(os.path.join(outdir,'temp_psf_drc.fits'))[0])
+        imwcs = wcs.WCS(dat[1],dat)
         y,x = skycoord_to_pixel(sky_location,imwcs)
         level3 = dat[1].data
         level3[np.isnan(level3)] = 0 
+        print(level3.shape)
         y,x = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
-        mx,my = np.meshgrid(np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(x+.5),
+        my,mx = np.meshgrid(np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(x+.5),
                             np.arange(-4*psf_width/2,psf_width/2*4+1,1).astype(int)+int(y+.5))
-        
+        print(x,y,np.max(mx),np.max(my))
         level3_psf = photutils.psf.FittableImageModel(level3[mx,my],normalize=True, 
                                                       oversampling=4)
         
@@ -464,6 +476,8 @@ def get_hst3_psf(st_obs,sky_location,psf_width=25):
         print('Failed to create PSF model')
         shutil.rmtree(outdir)
     return level3_psf
+
+
 def jwst_apcorr(fname,ee=70,alternate_ref=None):
     sc = source_catalog.source_catalog_step.SourceCatalogStep()
     if alternate_ref is not None:
