@@ -21,7 +21,7 @@
 ==============
 PSF Photometry
 ==============
-Measuring PSF Photometry with st_phot.
+Measuring PSF Photometry with space_phot.
 
 .. GENERATED FROM PYTHON SOURCE LINES 9-12
 
@@ -48,7 +48,7 @@ gravitationally lensed SN 2022riv
     from astroquery.mast import Observations
     from astropy.visualization import (simple_norm,LinearStretch)
 
-    import st_phot
+    import space_phot
 
 
 
@@ -90,16 +90,16 @@ For this example we download HST FLT images from MAST.
 
  .. code-block:: none
 
-    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HST/product/hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits to ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q3/hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits ... [Done]
-    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HST/product/hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits to ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q5/hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits ... [Done]
-    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HST/product/hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits to ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q7/hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits ... [Done]
+    INFO: Found cached file ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q3/hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits with expected size 16580160. [astroquery.query]
+    INFO: Found cached file ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q5/hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits with expected size 16580160. [astroquery.query]
+    INFO: Found cached file ./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q7/hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits with expected size 16580160. [astroquery.query]
 
 
 .. raw:: html
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=3</i>
-    <table id="table140690388092336" class="table-striped table-bordered table-condensed">
+    <table id="table140696160130416" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str99</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q3/hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -179,7 +179,7 @@ For this example we download HST FLT images from MAST.
 
 **Get the PSF model**
 
-st_phot uses Jay Anderson's gridded HST PSF models. Some filters
+space_phot uses Jay Anderson's gridded HST PSF models. Some filters
 are missing, so for those you'll have to either use a 
 neighboring filter or build your own PSF from stars in the field.
 
@@ -188,8 +188,8 @@ neighboring filter or build your own PSF from stars in the field.
 .. code-block:: default
 
 
-    hst_obs = st_phot.observation2(files)
-    psfs = st_phot.get_hst_psf(hst_obs,sn_location)
+    hst_obs = space_phot.observation2(files)
+    psfs = space_phot.get_hst_psf(hst_obs,sn_location)
     plt.imshow(psfs[0].data)
     plt.show()
 
@@ -206,7 +206,7 @@ neighboring filter or build your own PSF from stars in the field.
 
  .. code-block:: none
 
-    /Users/jpierel/CodeBase/st_phot/st_phot/wfc3_photometry/psfs/PSFSTD_WFC3IR_F110W.fits
+    /Users/jpierel/CodeBase/space_phot/space_phot/wfc3_photometry/psfs/PSFSTD_WFC3IR_F110W.fits
     Using PSF file PSFSTD_WFC3IR_F110W.fits
 
 
@@ -251,7 +251,7 @@ neighboring filter or build your own PSF from stars in the field.
     *
 
       .. image-sg:: /examples/images/sphx_glr_plot_a_psf_005.png
-         :alt: flux = ${6.41}_{-0.25}^{+0.27}$, x0 = ${555.91}_{-0.07}^{+0.07}$, y0 = ${561.30}_{-0.04}^{+0.04}$, x1 = ${559.22}_{-0.06}^{+0.05}$, y1 = ${564.63}_{-0.04}^{+0.04}$, x2 = ${562.42}_{-0.03}^{+0.03}$, y2 = ${567.96}_{-0.05}^{+0.05}$, bkg = ${4.49}_{-0.02}^{+0.02}$
+         :alt: flux = ${6.53}_{-0.30}^{+0.27}$, x0 = ${555.91}_{-0.06}^{+0.07}$, y0 = ${561.31}_{-0.04}^{+0.04}$, x1 = ${559.19}_{-0.06}^{+0.06}$, y1 = ${564.61}_{-0.03}^{+0.03}$, x2 = ${562.43}_{-0.03}^{+0.03}$, y2 = ${567.95}_{-0.05}^{+0.06}$, bkg = ${4.49}_{-0.02}^{+0.02}$
          :srcset: /examples/images/sphx_glr_plot_a_psf_005.png
          :class: sphx-glr-multi-img
 
@@ -260,12 +260,12 @@ neighboring filter or build your own PSF from stars in the field.
 
  .. code-block:: none
 
-    Finished PSF psf_photometry with median residuals of 11.61%
+    Finished PSF psf_photometry with median residuals of 11.01%
             ra         ...                     exp                     
     ------------------ ... --------------------------------------------
-     322.4175412318918 ... hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits
-     322.4175396126845 ... hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits
-    322.41753898759896 ... hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits
+    322.41754092905416 ... hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits
+     322.4175406591534 ... hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits
+     322.4175388709752 ... hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits
 
 
 
@@ -311,7 +311,7 @@ flux across all exposures
     *
 
       .. image-sg:: /examples/images/sphx_glr_plot_a_psf_007.png
-         :alt: flux0 = ${5.81}_{-0.41}^{+0.47}$, flux1 = ${6.09}_{-0.47}^{+0.53}$, flux2 = ${7.08}_{-0.41}^{+0.39}$, x0 = ${555.93}_{-0.07}^{+0.08}$, y0 = ${561.27}_{-0.05}^{+0.05}$, x1 = ${559.20}_{-0.07}^{+0.05}$, y1 = ${564.63}_{-0.04}^{+0.04}$, x2 = ${562.43}_{-0.03}^{+0.03}$, y2 = ${567.94}_{-0.05}^{+0.06}$, bkg0 = ${4.58}_{-0.03}^{+0.03}$, bkg1 = ${4.52}_{-0.03}^{+0.03}$, bkg2 = ${4.40}_{-0.03}^{+0.03}$
+         :alt: flux0 = ${6.10}_{-0.54}^{+0.41}$, flux1 = ${6.28}_{-0.50}^{+0.53}$, flux2 = ${7.04}_{-0.46}^{+0.43}$, x0 = ${555.91}_{-0.06}^{+0.07}$, y0 = ${561.29}_{-0.05}^{+0.04}$, x1 = ${559.18}_{-0.07}^{+0.06}$, y1 = ${564.62}_{-0.04}^{+0.04}$, x2 = ${562.43}_{-0.03}^{+0.03}$, y2 = ${567.95}_{-0.06}^{+0.07}$, bkg0 = ${4.57}_{-0.03}^{+0.03}$, bkg1 = ${4.52}_{-0.03}^{+0.03}$, bkg2 = ${4.40}_{-0.03}^{+0.03}$
          :srcset: /examples/images/sphx_glr_plot_a_psf_007.png
          :class: sphx-glr-multi-img
 
@@ -320,12 +320,12 @@ flux across all exposures
 
  .. code-block:: none
 
-    Finished PSF psf_photometry with median residuals of 5.06%
+    Finished PSF psf_photometry with median residuals of 3.92%
             ra         ...                     exp                     
     ------------------ ... --------------------------------------------
-    322.41754134803966 ... hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits
-     322.4175399846277 ... hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits
-    322.41753906223477 ... hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits
+    322.41754119476246 ... hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits
+     322.4175407932771 ... hst_16264_12_wfc3_ir_f110w_iebc12q5_flt.fits
+    322.41753901278287 ... hst_16264_12_wfc3_ir_f110w_iebc12q7_flt.fits
 
 
 
@@ -340,7 +340,7 @@ JWST Images
 
 For this example we download JWST cal images from MAST. We just use
 4 of the 8 dithered exposures  for speed here, but in principle
-st_phot can handle as many as are needed (given time).
+space_phot can handle as many as are needed (given time).
 
 .. GENERATED FROM PYTHON SOURCE LINES 137-150
 
@@ -368,16 +368,16 @@ st_phot can handle as many as are needed (given time).
  .. code-block:: none
 
     INFO: Found cached file ./mastDownload/JWST/jw02767002001_02103_00001_nrcb3/jw02767002001_02103_00001_nrcb3_cal.fits with expected size 117538560. [astroquery.query]
-    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:JWST/product/jw02767002001_02103_00002_nrcb3_cal.fits to ./mastDownload/JWST/jw02767002001_02103_00002_nrcb3/jw02767002001_02103_00002_nrcb3_cal.fits ... [Done]
-    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:JWST/product/jw02767002001_02103_00003_nrcb3_cal.fits to ./mastDownload/JWST/jw02767002001_02103_00003_nrcb3/jw02767002001_02103_00003_nrcb3_cal.fits ... [Done]
-    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:JWST/product/jw02767002001_02103_00004_nrcb3_cal.fits to ./mastDownload/JWST/jw02767002001_02103_00004_nrcb3/jw02767002001_02103_00004_nrcb3_cal.fits ... [Done]
+    INFO: Found cached file ./mastDownload/JWST/jw02767002001_02103_00002_nrcb3/jw02767002001_02103_00002_nrcb3_cal.fits with expected size 117538560. [astroquery.query]
+    INFO: Found cached file ./mastDownload/JWST/jw02767002001_02103_00003_nrcb3/jw02767002001_02103_00003_nrcb3_cal.fits with expected size 117538560. [astroquery.query]
+    INFO: Found cached file ./mastDownload/JWST/jw02767002001_02103_00004_nrcb3/jw02767002001_02103_00004_nrcb3_cal.fits with expected size 117538560. [astroquery.query]
 
 
 .. raw:: html
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=4</i>
-    <table id="table140689853648080" class="table-striped table-bordered table-condensed">
+    <table id="table140695952924128" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str92</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/JWST/jw02767002001_02103_00001_nrcb3/jw02767002001_02103_00001_nrcb3_cal.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -471,7 +471,7 @@ st_phot can handle as many as are needed (given time).
 
 **Get the PSF model**
 
-st_phot uses WebbPSF models for JWST. This can be pretty slow, 
+space_phot uses WebbPSF models for JWST. This can be pretty slow, 
 so you don't want to run this every time. Either create your
 own repository of these and pass each one when needed directly to
 the psf_photometry function, or else at least just do this once,
@@ -483,8 +483,8 @@ for testing purposes.
 .. code-block:: default
 
 
-    jwst_obs = st_phot.observation2(files)
-    psfs = st_phot.get_jwst_psf(jwst_obs,sn_location,num_psfs=4)
+    jwst_obs = space_phot.observation2(files)
+    psfs = space_phot.get_jwst_psf(jwst_obs,sn_location,num_psfs=4)
     plt.imshow(psfs[0].data)
     plt.show()
 
@@ -537,13 +537,13 @@ for testing purposes.
     Running instrument: NIRCam, filter: F150W
       Running detector: NRCB3
         Position 1/4: (0, 0) pixels
-        Position 1/4 centroid: (201.473112109223, 200.72440539884693)
+        Position 1/4 centroid: (201.47297328899987, 200.71407298007347)
         Position 2/4: (0, 2047) pixels
-        Position 2/4 centroid: (201.7463744998794, 200.78239485839993)
+        Position 2/4 centroid: (201.74872059618778, 200.77390833148394)
         Position 3/4: (2047, 0) pixels
-        Position 3/4 centroid: (201.46082149906897, 201.18357167071326)
+        Position 3/4 centroid: (201.4608406355641, 201.17750091409175)
         Position 4/4: (2047, 2047) pixels
-        Position 4/4 centroid: (201.81556997259125, 201.1599927062982)
+        Position 4/4 centroid: (201.81936814309998, 201.15463373257336)
 
 
 
@@ -587,7 +587,7 @@ for testing purposes.
     *
 
       .. image-sg:: /examples/images/sphx_glr_plot_a_psf_012.png
-         :alt: flux = ${427.16}_{-3.59}^{+3.48}$, x0 = ${904.03}_{-0.01}^{+0.01}$, y0 = ${1281.30}_{-0.01}^{+0.01}$, x1 = ${1098.14}_{-0.01}^{+0.01}$, y1 = ${1273.75}_{-0.01}^{+0.01}$, x2 = ${905.48}_{-0.01}^{+0.01}$, y2 = ${1281.93}_{-0.01}^{+0.01}$, x3 = ${1099.53}_{-0.01}^{+0.01}$, y3 = ${1274.06}_{-0.01}^{+0.01}$, bkg = ${1.21}_{-0.01}^{+0.01}$
+         :alt: flux = ${426.82}_{-3.55}^{+3.36}$, x0 = ${904.03}_{-0.01}^{+0.01}$, y0 = ${1281.30}_{-0.01}^{+0.01}$, x1 = ${1098.14}_{-0.01}^{+0.01}$, y1 = ${1273.75}_{-0.01}^{+0.01}$, x2 = ${905.48}_{-0.01}^{+0.01}$, y2 = ${1281.93}_{-0.01}^{+0.01}$, x3 = ${1099.53}_{-0.01}^{+0.01}$, y3 = ${1274.05}_{-0.01}^{+0.01}$, bkg = ${1.21}_{-0.01}^{+0.01}$
          :srcset: /examples/images/sphx_glr_plot_a_psf_012.png
          :class: sphx-glr-multi-img
 
@@ -596,13 +596,13 @@ for testing purposes.
 
  .. code-block:: none
 
-    Finished PSF psf_photometry with median residuals of 1.46%
+    Finished PSF psf_photometry with median residuals of 1.54%
             ra         ...                   exp                   
     ------------------ ... ----------------------------------------
-     322.4175394403992 ... jw02767002001_02103_00001_nrcb3_cal.fits
-    322.41753898191234 ... jw02767002001_02103_00003_nrcb3_cal.fits
-    322.41753890893585 ... jw02767002001_02103_00002_nrcb3_cal.fits
-     322.4175381891402 ... jw02767002001_02103_00004_nrcb3_cal.fits
+    322.41753943981485 ... jw02767002001_02103_00001_nrcb3_cal.fits
+     322.4175389900095 ... jw02767002001_02103_00003_nrcb3_cal.fits
+    322.41753891004475 ... jw02767002001_02103_00002_nrcb3_cal.fits
+     322.4175381854303 ... jw02767002001_02103_00004_nrcb3_cal.fits
 
 
 
@@ -623,7 +623,7 @@ this.
 
 For this example we download JWST cal images from MAST. We just use
 4 of the 8 dithered exposures  for speed here, but in principle
-st_phot can handle as many as are needed (given time).
+space_phot can handle as many as are needed (given time).
 
 .. GENERATED FROM PYTHON SOURCE LINES 228-234
 
@@ -643,14 +643,14 @@ st_phot can handle as many as are needed (given time).
 
  .. code-block:: none
 
-    Downloading URL https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:JWST/product/jw02767-o002_t001_nircam_clear-f150w_i2d.fits to ./mastDownload/JWST/jw02767-o002_t001_nircam_clear-f150w/jw02767-o002_t001_nircam_clear-f150w_i2d.fits ... [Done]
+    INFO: Found cached file ./mastDownload/JWST/jw02767-o002_t001_nircam_clear-f150w/jw02767-o002_t001_nircam_clear-f150w_i2d.fits with expected size 571973760. [astroquery.query]
 
 
 .. raw:: html
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=1</i>
-    <table id="table140689854525024" class="table-striped table-bordered table-condensed">
+    <table id="table140696160133488" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str102</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/JWST/jw02767-o002_t001_nircam_clear-f150w/jw02767-o002_t001_nircam_clear-f150w_i2d.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -752,8 +752,8 @@ by just replacing "jwst" with "hst".
 .. code-block:: default
 
 
-    jwst3_obs = st_phot.observation3(files[0])
-    psf3 = st_phot.get_jwst3_psf(jwst_obs,sn_location,num_psfs=4)
+    jwst3_obs = space_phot.observation3(files[0])
+    psf3 = space_phot.get_jwst3_psf(jwst_obs,sn_location,num_psfs=4)
     plt.imshow(psf3.data)
     plt.show()
 
@@ -770,7 +770,6 @@ by just replacing "jwst" with "hst".
 
  .. code-block:: none
 
-    yes err
     /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T11:04:11.545' from MJD-AVG.
     Set DATE-END to '2022-10-06T11:50:05.577' from MJD-END'.
@@ -866,7 +865,7 @@ by just replacing "jwst" with "hst".
       warnings.warn("var_rnoise array not available. Setting drizzle weight map to 1",
     /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/jwst/resample/resample_utils.py:184: RuntimeWarning: var_rnoise array not available. Setting drizzle weight map to 1
       warnings.warn("var_rnoise array not available. Setting drizzle weight map to 1",
-    /Users/jpierel/CodeBase/st_phot/st_phot/util.py:347: ResourceWarning: unclosed file <_io.BufferedReader name='mastDownload/JWST/jw02767002001_02103_00004_nrcb3/jw02767002001_02103_00004_nrcb3_cal.fits'>
+    /Users/jpierel/CodeBase/space_phot/space_phot/util.py:352: ResourceWarning: unclosed file <_io.BufferedReader name='mastDownload/JWST/jw02767002001_02103_00004_nrcb3/jw02767002001_02103_00004_nrcb3_cal.fits'>
       dat = fits.open(os.path.join(outdir,'temp_psf_cals_i2d.fits'))
     /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:40:55.766' from MJD-AVG.
@@ -876,9 +875,9 @@ by just replacing "jwst" with "hst".
     Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
     Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
       warnings.warn(
-    /Users/jpierel/CodeBase/st_phot/Docs/source/_examples/plot_a_psf.py:273: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/jpierel/CodeBase/st_phot/st_phot/temp_823/temp_psf_cals_i2d.fits'>
-      psf3 = st_phot.get_jwst3_psf(jwst_obs,sn_location,num_psfs=4)
-    /Users/jpierel/CodeBase/st_phot/Docs/source/_examples/plot_a_psf.py:275: UserWarning: Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.
+    /Users/jpierel/CodeBase/space_phot/Docs/source/_examples/plot_a_psf.py:273: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/jpierel/CodeBase/space_phot/space_phot/temp_835/temp_psf_cals_i2d.fits'>
+      psf3 = space_phot.get_jwst3_psf(jwst_obs,sn_location,num_psfs=4)
+    /Users/jpierel/CodeBase/space_phot/Docs/source/_examples/plot_a_psf.py:275: UserWarning: Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.
       plt.show()
 
 
@@ -908,23 +907,22 @@ by just replacing "jwst" with "hst".
 
 
 
-.. rst-class:: sphx-glr-horizontal
+.. image-sg:: /examples/images/sphx_glr_plot_a_psf_016.png
+   :alt: Data, Model, Residual
+   :srcset: /examples/images/sphx_glr_plot_a_psf_016.png
+   :class: sphx-glr-single-img
 
 
-    *
+.. rst-class:: sphx-glr-script-out
 
-      .. image-sg:: /examples/images/sphx_glr_plot_a_psf_016.png
-         :alt: Data, Model, Residual
-         :srcset: /examples/images/sphx_glr_plot_a_psf_016.png
-         :class: sphx-glr-multi-img
+ .. code-block:: none
 
-    *
-
-      .. image-sg:: /examples/images/sphx_glr_plot_a_psf_017.png
-         :alt: flux = ${355.55}_{-2.45}^{+2.76}$, x0 = ${3340.09}_{-0.01}^{+0.01}$, y0 = ${1486.06}_{-0.01}^{+0.01}$, bkg = ${1.33}_{-0.01}^{+0.01}$
-         :srcset: /examples/images/sphx_glr_plot_a_psf_017.png
-         :class: sphx-glr-multi-img
-
+    [[1486.373549   3340.63103233]]
+     id group_id local_bkg ...        qfit                cfit         flags
+    --- -------- --------- ... ------------------ -------------------- -----
+      1        1       0.0 ... 1.9097649063889377 -0.12084500300568927     0
+    39.25098268512534 627.9856711441647
+    Must fit PSF before plotting.
 
 
 
@@ -932,7 +930,7 @@ by just replacing "jwst" with "hst".
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 4 minutes  37.293 seconds)
+   **Total running time of the script:** ( 1 minutes  52.427 seconds)
 
 
 .. _sphx_glr_download_examples_plot_a_psf.py:

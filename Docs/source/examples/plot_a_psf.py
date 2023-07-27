@@ -2,7 +2,7 @@
 ==============
 PSF Photometry
 ==============
-Measuring PSF Photometry with st_phot.
+Measuring PSF Photometry with space_phot.
 """
 	
 ###############################################################
@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 from astroquery.mast import Observations
 from astropy.visualization import (simple_norm,LinearStretch)
 
-import st_phot
+import space_phot
 
 
 ####################################################################
@@ -78,12 +78,12 @@ plt.show()
 ####################################################################
 # **Get the PSF model**
 # 
-# st_phot uses Jay Anderson's gridded HST PSF models. Some filters
+# space_phot uses Jay Anderson's gridded HST PSF models. Some filters
 # are missing, so for those you'll have to either use a 
 # neighboring filter or build your own PSF from stars in the field.
 
-hst_obs = st_phot.observation2(files)
-psfs = st_phot.get_hst_psf(hst_obs,sn_location)
+hst_obs = space_phot.observation2(files)
+psfs = space_phot.get_hst_psf(hst_obs,sn_location)
 plt.imshow(psfs[0].data)
 plt.show()
 
@@ -133,7 +133,7 @@ print(hst_obs.psf_result.phot_cal_table)
 #
 # For this example we download JWST cal images from MAST. We just use
 # 4 of the 8 dithered exposures  for speed here, but in principle
-# st_phot can handle as many as are needed (given time).
+# space_phot can handle as many as are needed (given time).
 obs_table = Observations.query_criteria(obs_id='jw02767-o002_t001_nircam_clear-f150w')
 data_products_by_obs = Observations.get_product_list(obs_table)
 data_products_by_obs = data_products_by_obs[data_products_by_obs['calib_level']==2]
@@ -179,15 +179,15 @@ plt.show()
 ####################################################################
 # **Get the PSF model**
 # 
-# st_phot uses WebbPSF models for JWST. This can be pretty slow, 
+# space_phot uses WebbPSF models for JWST. This can be pretty slow, 
 # so you don't want to run this every time. Either create your
 # own repository of these and pass each one when needed directly to
 # the psf_photometry function, or else at least just do this once,
 # save the ouptut, and then read it in and proceed to photometry
 # for testing purposes.
 
-jwst_obs = st_phot.observation2(files)
-psfs = st_phot.get_jwst_psf(jwst_obs,sn_location,num_psfs=4)
+jwst_obs = space_phot.observation2(files)
+psfs = space_phot.get_jwst_psf(jwst_obs,sn_location,num_psfs=4)
 plt.imshow(psfs[0].data)
 plt.show()
 
@@ -224,7 +224,7 @@ print(jwst_obs.psf_result.phot_cal_table)
 #
 # For this example we download JWST cal images from MAST. We just use
 # 4 of the 8 dithered exposures  for speed here, but in principle
-# st_phot can handle as many as are needed (given time).
+# space_phot can handle as many as are needed (given time).
 obs_table = Observations.query_criteria(obs_id='jw02767-o002_t001_nircam_clear-f150w')
 data_products_by_obs = Observations.get_product_list(obs_table)
 data_products_by_obs = data_products_by_obs[data_products_by_obs['calib_level']==3]
@@ -269,8 +269,8 @@ plt.show()
 # pattern used to drizzle the data. You can do the same with HST
 # by just replacing "jwst" with "hst". 
 
-jwst3_obs = st_phot.observation3(files[0])
-psf3 = st_phot.get_jwst3_psf(jwst_obs,sn_location,num_psfs=4)
+jwst3_obs = space_phot.observation3(files[0])
+psf3 = space_phot.get_jwst3_psf(jwst_obs,sn_location,num_psfs=4)
 plt.imshow(psf3.data)
 plt.show()
 

@@ -2,7 +2,7 @@
 =============
 Planting PSFs
 =============
-Planting a PSF with st_phot.
+Planting a PSF with space_phot.
 """
 	
 ###############################################################
@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 from astroquery.mast import Observations
 from astropy.visualization import (simple_norm,LinearStretch)
 
-import st_phot
+import space_phot
 
 
 ####################################################################
@@ -43,7 +43,7 @@ Observations.download_products(data_products_by_obs,extension='fits')
 ####################################################################
 # **Get the PSF model**
 # 
-# st_phot uses WebbPSF models for JWST. This can be pretty slow, 
+# space_phot uses WebbPSF models for JWST. This can be pretty slow, 
 # so you don't want to run this every time. Either create your
 # own repository of these and pass each one when needed directly to
 # the psf_photometry function, or else at least just do this once,
@@ -53,8 +53,8 @@ Observations.download_products(data_products_by_obs,extension='fits')
 files = glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*cal.fits')
 print(files)
 plant_location = SkyCoord('21:29:42.4104','+0:04:53.253',unit=(u.hourangle,u.deg))
-jwst_obs = st_phot.observation2(files)
-psfs = st_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4)
+jwst_obs = space_phot.observation2(files)
+psfs = space_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4)
 plt.imshow(extract_array(psfs[0].data,(9,9),(psfs[0].data.shape[0]/2,
     psfs[0].data.shape[1]/2)))
 plt.show()
@@ -100,10 +100,10 @@ plt.show()
 ####################################################################
 # **Measure PSF photometry and Aperture photometry for the source**
 # 
-jwst_obs = st_phot.observation2(glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*plant.fits')
+jwst_obs = space_phot.observation2(glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*plant.fits')
 )
 
-jwst_obs.psf_photometry(psfs,plant_location,bounds={'flux':[-3000,100],
+jwst_obs.psf_photometry(psfs,plant_location,bounds={'flux':[-3000,1000],
                         'centroid':[-1,1],
                         'bkg':[0,50]},
                         fit_width=5,

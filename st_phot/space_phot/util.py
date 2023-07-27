@@ -216,12 +216,18 @@ def get_jwst_psf(st_obs,sky_location,num_psfs=16,psf_width=101):
     inst = webbpsf.instrument(st_obs.instrument)
     inst.filter = st_obs.filter
     inst.detector=st_obs.detector
+<<<<<<< HEAD:st_phot/util.py
     inst.pixelscale = st_obs.pixel_scale
+=======
+    if st_obs.pipeline_level == 3:
+        inst.pixelscale = st_obs.pixel_scale
+>>>>>>> 28a2893eea9bf4e916b8cf64c70817a88aec6127:space_phot/util.py
 
     grid = inst.psf_grid(num_psfs=num_psfs,all_detectors=False,oversample=4)
     psf_list = []
     grid.oversampling=1
     for i in range(st_obs.n_exposures):
+
         imwcs = st_obs.wcs_list[i]
         x,y = astropy.wcs.utils.skycoord_to_pixel(sky_location,imwcs)
 

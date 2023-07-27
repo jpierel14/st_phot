@@ -29,7 +29,7 @@ def recursive_glob(basedir, pattern):
     return matches
 
 
-PACKAGENAME = 'st_phot'
+PACKAGENAME = 'space_phot'
 # Add the project-global data
 #data_files = []
 pkgdatadir = os.path.join(PACKAGENAME, 'wfc3_photometry')
@@ -43,7 +43,8 @@ setup(
     name=PACKAGENAME,
     setup_requires=['numpy'],
     install_requires=['numpy', 'astropy','jwst','sncosmo','webbpsf','corner','nestle',
-                        'stsci.skypac','space_phot'],
+                        'stsci.skypac','space_phot','photutils'],
+
     packages=[PACKAGENAME],
     package_data={PACKAGENAME: data_files},
 

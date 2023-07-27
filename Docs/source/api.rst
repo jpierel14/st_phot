@@ -4,13 +4,13 @@ API Documentation
 
 |
 
-*******
-st_phot
-*******
+**********
+space_phot
+**********
 
 ----------
 photometry
 ----------
-.. automodule:: st_phot.photometry
+.. automodule:: space_phot.photometry
    :members:
 

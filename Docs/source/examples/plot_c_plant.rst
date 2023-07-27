@@ -21,7 +21,7 @@
 =============
 Planting PSFs
 =============
-Planting a PSF with st_phot.
+Planting a PSF with space_phot.
 
 .. GENERATED FROM PYTHON SOURCE LINES 9-12
 
@@ -48,7 +48,7 @@ gravitationally lensed SN 2022riv
     from astroquery.mast import Observations
     from astropy.visualization import (simple_norm,LinearStretch)
 
-    import st_phot
+    import space_phot
 
 
 
@@ -91,7 +91,7 @@ For this example we download JWST cal images from MAST. We just use
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=1</i>
-    <table id="table140591731293056" class="table-striped table-bordered table-condensed">
+    <table id="table140322226194608" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str92</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/JWST/jw02767002001_02103_00001_nrcb3/jw02767002001_02103_00001_nrcb3_cal.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -104,7 +104,7 @@ For this example we download JWST cal images from MAST. We just use
 
 **Get the PSF model**
 
-st_phot uses WebbPSF models for JWST. This can be pretty slow, 
+space_phot uses WebbPSF models for JWST. This can be pretty slow, 
 so you don't want to run this every time. Either create your
 own repository of these and pass each one when needed directly to
 the psf_photometry function, or else at least just do this once,
@@ -119,8 +119,8 @@ for testing purposes.
     files = glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*cal.fits')
     print(files)
     plant_location = SkyCoord('21:29:42.4104','+0:04:53.253',unit=(u.hourangle,u.deg))
-    jwst_obs = st_phot.observation2(files)
-    psfs = st_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4)
+    jwst_obs = space_phot.observation2(files)
+    psfs = space_phot.get_jwst_psf(jwst_obs,plant_location,num_psfs=4)
     plt.imshow(extract_array(psfs[0].data,(9,9),(psfs[0].data.shape[0]/2,
         psfs[0].data.shape[1]/2)))
     plt.show()
@@ -143,9 +143,9 @@ for testing purposes.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
-    Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
-    Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.937356 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.545059 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233352913.706 from OBSGEO-[XYZ]'.
       warnings.warn(
 
     Running instrument: NIRCam, filter: F150W
@@ -203,9 +203,9 @@ You can see we've chosen a region of the image with no sources.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
-    Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
-    Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.937356 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.545059 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233352913.706 from OBSGEO-[XYZ]'.
       warnings.warn(
 
 
@@ -262,7 +262,7 @@ You can see we've chosen a region of the image with no sources.
 
  .. code-block:: none
 
-    6.47655129925464 6.471176945746858
+    6.475523218908712 6.471149663350621
 
 
 
@@ -276,10 +276,10 @@ You can see we've chosen a region of the image with no sources.
 
 .. code-block:: default
 
-    jwst_obs = st_phot.observation2(glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*plant.fits')
+    jwst_obs = space_phot.observation2(glob.glob('mastDownload/JWST/jw02767002001_02103_00001_nrcb3/*plant.fits')
     )
 
-    jwst_obs.psf_photometry(psfs,plant_location,bounds={'flux':[-3000,100],
+    jwst_obs.psf_photometry(psfs,plant_location,bounds={'flux':[-3000,1000],
                             'centroid':[-1,1],
                             'bkg':[0,50]},
                             fit_width=5,
@@ -310,7 +310,7 @@ You can see we've chosen a region of the image with no sources.
     *
 
       .. image-sg:: /examples/images/sphx_glr_plot_c_plant_006.png
-         :alt: flux = ${102.90}_{-1.46}^{+0.93}$, x0 = ${1834.49}_{-0.02}^{+0.02}$, y0 = ${149.26}_{-0.02}^{+0.02}$, bkg = ${0.27}_{-0.01}^{+0.01}$
+         :alt: flux = ${106.02}_{-2.38}^{+2.58}$, x0 = ${1834.50}_{-0.02}^{+0.02}$, y0 = ${149.25}_{-0.02}^{+0.02}$, bkg = ${0.26}_{-0.01}^{+0.01}$
          :srcset: /examples/images/sphx_glr_plot_c_plant_006.png
          :class: sphx-glr-multi-img
 
@@ -323,13 +323,13 @@ You can see we've chosen a region of the image with no sources.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
-    Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
-    Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.937356 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.545059 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233352913.706 from OBSGEO-[XYZ]'.
       warnings.warn(
-    Finished PSF psf_photometry with median residuals of 0.32%
-    PSF Mag: 26.00972559856439
-    Aperture Mag: 25.912597620213745
+    Finished PSF psf_photometry with median residuals of 0.45%
+    PSF Mag: 25.973338149717783
+    Aperture Mag: 25.914826735549248
 
 
 
@@ -337,7 +337,7 @@ You can see we've chosen a region of the image with no sources.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  51.714 seconds)
+   **Total running time of the script:** ( 0 minutes  31.040 seconds)
 
 
 .. _sphx_glr_download_examples_plot_c_plant.py:

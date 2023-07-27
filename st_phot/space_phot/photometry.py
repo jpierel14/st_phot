@@ -418,6 +418,7 @@ class observation3(observation):
     st_phot class for level 3 (drizzled) data
     """
     def __init__(self,fname):
+        self.pipeline_level = 3
         self.fname = fname
         self.fits = astropy.io.fits.open(self.fname)
         self.data = self.fits['SCI',1].data
@@ -986,6 +987,7 @@ class observation2(observation):
     st_phot class for level 2 (individual exposures, cals, flts) data
     """
     def __init__(self,exposure_fnames,sci_ext=1):
+        self.pipeline_level = 2
         self.exposure_fnames = exposure_fnames if not isinstance(exposure_fnames,str) else [exposure_fnames]
         self.exposures = [astropy.io.fits.open(f) for f in self.exposure_fnames]
         self.data_arr = [im['SCI',sci_ext].data for im in self.exposures]
@@ -994,6 +996,9 @@ class observation2(observation):
         self.sci_headers = [im['SCI',sci_ext].header for im in self.exposures]
         self.wcs_list = [astropy.wcs.WCS(hdr,dat) for hdr,dat in zip(self.sci_headers,self.exposures)]
         self.n_exposures = len(self.exposures)
+        self.pixel_scale = np.array([astropy.wcs.utils.proj_plane_pixel_scales(self.wcs_list[i])[0]  *\
+             self.wcs_list[i].wcs.cunit[0].to('arcsec') for i in range(self.n_exposures)])
+        
         self.telescope = self.prim_headers[0]['TELESCOP']
         self.instrument = self.prim_headers[0]['INSTRUME']
         try:

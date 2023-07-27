@@ -2,7 +2,7 @@
 ===================
 Aperture Photometry
 ===================
-Measuring PSF Photometry with st_phot.
+Measuring PSF Photometry with space_phot.
 """
 	
 ###############################################################
@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 from astroquery.mast import Observations
 from astropy.visualization import (simple_norm,LinearStretch)
 
-import st_phot
+import space_phot
 
 
 ####################################################################
@@ -78,7 +78,7 @@ plt.show()
 ####################################################################
 # **Measure the aperture photometry**
 # 
-hst_obs = st_phot.observation(files)
+hst_obs = space_phot.observation2(files)
 hst_obs.aperture_photometry(sn_location,radius=3,
                     skyan_in=5,skyan_out=7)
 print(hst_obs.aperture_result.phot_cal_table)
@@ -94,7 +94,7 @@ print(hst_obs.aperture_result.phot_cal_table)
 #
 # For this example we download JWST cal images from MAST. We just use
 # 4 of the 8 dithered exposures  for speed here, but in principle
-# st_phot can handle as many as are needed (given time).
+# space_phot can handle as many as are needed (given time).
 obs_table = Observations.query_criteria(obs_id='jw02767-o002_t001_nircam_clear-f150w')
 data_products_by_obs = Observations.get_product_list(obs_table)
 data_products_by_obs = data_products_by_obs[data_products_by_obs['calib_level']==2]
@@ -140,7 +140,7 @@ plt.show()
 ####################################################################
 # **Measure the aperture photometry**
 # 
-jwst_obs = st_phot.observation(files)
+jwst_obs = space_phot.observation2(files)
 jwst_obs.aperture_photometry(sn_location,encircled_energy='70')
 print(jwst_obs.aperture_result.phot_cal_table)
 

@@ -2,7 +2,7 @@
 Installation
 ************
 
-st_phot works on Python 3+ and requires the
+space_phot works on Python 3+ and requires the
 following Python packages (these should install
 automatically when you install jhat):
 
@@ -21,15 +21,15 @@ Install using pip
 
 Using pip::
 
-    pip install st_phot
+    pip install space_phot
 
 Install Development Version
 ===========================
 
 Using git::
 
-    git clone https://github.com/jpierel14/st_phot.git
-    cd st_phot
+    git clone https://github.com/jpierel14/space_phot.git
+    cd space_phot
     python setup.py install
 
 

@@ -21,7 +21,7 @@
 ===================
 Aperture Photometry
 ===================
-Measuring PSF Photometry with st_phot.
+Measuring PSF Photometry with space_phot.
 
 .. GENERATED FROM PYTHON SOURCE LINES 9-12
 
@@ -48,7 +48,7 @@ gravitationally lensed SN 2022riv
     from astroquery.mast import Observations
     from astropy.visualization import (simple_norm,LinearStretch)
 
-    import st_phot
+    import space_phot
 
 
 
@@ -99,7 +99,7 @@ For this example we download HST FLT images from MAST.
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=3</i>
-    <table id="table140674857890960" class="table-striped table-bordered table-condensed">
+    <table id="table140695633464048" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str99</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/HST/hst_16264_12_wfc3_ir_f110w_iebc12q3/hst_16264_12_wfc3_ir_f110w_iebc12q3_flt.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -184,7 +184,7 @@ For this example we download HST FLT images from MAST.
 
 .. code-block:: default
 
-    hst_obs = st_phot.observation(files)
+    hst_obs = space_phot.observation2(files)
     hst_obs.aperture_photometry(sn_location,radius=3,
                         skyan_in=5,skyan_out=7)
     print(hst_obs.aperture_result.phot_cal_table)
@@ -198,7 +198,7 @@ For this example we download HST FLT images from MAST.
 
  .. code-block:: none
 
-    /Users/jpierel/CodeBase/st_phot/st_phot/cal.py:66: RuntimeWarning: invalid value encountered in log10
+    /Users/jpierel/CodeBase/space_phot/space_phot/cal.py:67: RuntimeWarning: invalid value encountered in log10
       mag = -2.5*np.log10(flux)+zp
           flux_cal      ...                     exp                     
     ------------------- ... --------------------------------------------
@@ -219,7 +219,7 @@ JWST Images
 
 For this example we download JWST cal images from MAST. We just use
 4 of the 8 dithered exposures  for speed here, but in principle
-st_phot can handle as many as are needed (given time).
+space_phot can handle as many as are needed (given time).
 
 .. GENERATED FROM PYTHON SOURCE LINES 98-111
 
@@ -256,7 +256,7 @@ st_phot can handle as many as are needed (given time).
 
     <div class="output_subarea output_html rendered_html output_result">
     <div><i>Table length=4</i>
-    <table id="table140675095093616" class="table-striped table-bordered table-condensed">
+    <table id="table140695633470576" class="table-striped table-bordered table-condensed">
     <thead><tr><th>Local Path</th><th>Status</th><th>Message</th><th>URL</th></tr></thead>
     <thead><tr><th>str92</th><th>str8</th><th>object</th><th>object</th></tr></thead>
     <tr><td>./mastDownload/JWST/jw02767002001_02103_00001_nrcb3/jw02767002001_02103_00001_nrcb3_cal.fits</td><td>COMPLETE</td><td>None</td><td>None</td></tr>
@@ -334,11 +334,11 @@ st_phot can handle as many as are needed (given time).
 
  .. code-block:: none
 
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
     Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
     Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
       warnings.warn(
@@ -355,7 +355,7 @@ st_phot can handle as many as are needed (given time).
 
 .. code-block:: default
 
-    jwst_obs = st_phot.observation(files)
+    jwst_obs = space_phot.observation2(files)
     jwst_obs.aperture_photometry(sn_location,encircled_energy='70')
     print(jwst_obs.aperture_result.phot_cal_table)
 
@@ -368,44 +368,44 @@ st_phot can handle as many as are needed (given time).
 
  .. code-block:: none
 
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:18:17.568' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:23:39.671' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:29:01.774' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.936334 from OBSGEO-[XYZ].
     Set OBSGEO-B to    20.544618 from OBSGEO-[XYZ].
     Set OBSGEO-H to 1233352579.016 from OBSGEO-[XYZ]'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:41:33.343' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:41:33.343' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:46:55.446' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:52:17.549' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.971719 from OBSGEO-[XYZ].
-    Set OBSGEO-B to    20.560575 from OBSGEO-[XYZ].
-    Set OBSGEO-H to 1233361140.633 from OBSGEO-[XYZ]'.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.973145 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.561198 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233361578.113 from OBSGEO-[XYZ]'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:29:33.983' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:29:33.983' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:34:56.086' from MJD-AVG.
     Set DATE-END to '2022-10-06T10:40:18.189' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.953256 from OBSGEO-[XYZ].
-    Set OBSGEO-B to    20.552251 from OBSGEO-[XYZ].
-    Set OBSGEO-H to 1233356657.959 from OBSGEO-[XYZ]'.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.954699 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.552882 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233357096.537 from OBSGEO-[XYZ]'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:52:49.758' from MJD-BEG.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'datfix' made the change 'Set DATE-BEG to '2022-10-06T10:52:49.758' from MJD-BEG.
     Set DATE-AVG to '2022-10-06T10:58:11.861' from MJD-AVG.
     Set DATE-END to '2022-10-06T11:03:33.964' from MJD-END'.
       warnings.warn(
-    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:725: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.990184 from OBSGEO-[XYZ].
-    Set OBSGEO-B to    20.568897 from OBSGEO-[XYZ].
-    Set OBSGEO-H to 1233365657.613 from OBSGEO-[XYZ]'.
+    /Users/jpierel/miniconda3/envs/tweakreg/lib/python3.10/site-packages/astropy/wcs/wcs.py:803: FITSFixedWarning: 'obsfix' made the change 'Set OBSGEO-L to     4.990493 from OBSGEO-[XYZ].
+    Set OBSGEO-B to    20.569016 from OBSGEO-[XYZ].
+    Set OBSGEO-H to 1233365823.364 from OBSGEO-[XYZ]'.
       warnings.warn(
            flux_cal       ...                   exp                   
     --------------------- ... ----------------------------------------
     7.018505806740728e-13 ... jw02767002001_02103_00001_nrcb3_cal.fits
-    6.990262584193577e-13 ... jw02767002001_02103_00003_nrcb3_cal.fits
-    7.047624747011503e-13 ... jw02767002001_02103_00002_nrcb3_cal.fits
-    6.993998091556553e-13 ... jw02767002001_02103_00004_nrcb3_cal.fits
+    7.021870407673275e-13 ... jw02767002001_02103_00003_nrcb3_cal.fits
+    7.112805309643311e-13 ... jw02767002001_02103_00002_nrcb3_cal.fits
+    6.965374111490209e-13 ... jw02767002001_02103_00004_nrcb3_cal.fits
 
 
 
@@ -413,7 +413,7 @@ st_phot can handle as many as are needed (given time).
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  5.131 seconds)
+   **Total running time of the script:** ( 0 minutes  8.393 seconds)
 
 
 .. _sphx_glr_download_examples_plot_b_aperture.py:
